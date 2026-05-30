@@ -1,0 +1,16 @@
+blinker==1.9.0
+certifi==2026.5.20
+charset-normalizer==3.4.7
+click==8.4.1
+Flask==3.0.3
+gunicorn==22.0.0
+idna==3.17
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+packaging==26.2
+requests==2.34.2
+urllib3==2.7.0
+Werkzeug==3.1.8
+yt-dlp==2026.3.17
+gevent==26.4.0
