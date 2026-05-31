@@ -12,5 +12,4 @@ packaging==26.2
 requests==2.34.2
 urllib3==2.7.0
 Werkzeug==3.1.8
-yt-dlp==2026.3.17
 gevent==26.4.0

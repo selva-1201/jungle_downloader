@@ -14,7 +14,7 @@
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
-  <link rel="canonical" href="request.url_root">
+  <link rel="canonical" href="{{ request.url_root }}">
 
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
@@ -24,7 +24,7 @@
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="request.url_root">
+  <meta property="og:url" content="{{ request.url_root }}">
   <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
   <meta property="og:description"
     content="Free, open-source video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and 1800+ more. No sign-in needed. Download MP4 & MP3 instantly.">
@@ -32,7 +32,7 @@
   <meta property="og:site_name" content="Jungle Media Downloader">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="request.url_root">
+  <meta name="twitter:url" content="{{ request.url_root }}">
   <meta name="twitter:title" content="Jungle Media Downloader – Download from 1800+ Sites">
   <meta name="twitter:description"
     content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and 1800+ more sites. MP4 & MP3.">
@@ -43,7 +43,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Jungle Media Downloader",
-    "url": "request.url_root",
+    "url": "{{ request.url_root }}",
     "description": "Free open-source media downloader supporting 1800+ websites. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",

@@ -18,6 +18,8 @@ def format_size(bytes_size):
     return f"{mb:.1f} MB"
 
 
+COOKIES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
+
 def fetch_fresh_metadata(video_url):
     ydl_opts = {
         'quiet': True,
@@ -26,8 +28,9 @@ def fetch_fresh_metadata(video_url):
             'youtube': {'skip': ['dash', 'hls']},
         }
     }
+    if os.path.exists(COOKIES_FILE):
+        ydl_opts['cookiefile'] = COOKIES_FILE
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(video_url, download=False)
 
 
 def is_fragmented(fmt):
