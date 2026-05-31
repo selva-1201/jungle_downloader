@@ -24,15 +24,12 @@ def fetch_fresh_metadata(video_url):
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'extractor_args': {
-            'youtube': {'skip': ['dash', 'hls']},
-        }
     }
     if os.path.exists(COOKIES_FILE):
         ydl_opts['cookiefile'] = COOKIES_FILE
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(video_url, download=False)
-
 
 
 def is_fragmented(fmt):
@@ -117,7 +114,7 @@ def stream_via_direct_url(target_format, media_type):
     magic_headers = dict(target_format.get('http_headers', {}))
     magic_headers['Connection'] = 'keep-alive'
 
-    r = requests.get(stream_url, headers=magic_headers, stream=True, timeout=30)
+    r = requests.get(stream_url, headers=magic_headers, stream=True, timeout=60)
     content_type = 'audio/mpeg' if media_type == 'audio' else 'video/mp4'
 
     def gen():
