@@ -31,6 +31,8 @@ def fetch_fresh_metadata(video_url):
     if os.path.exists(COOKIES_FILE):
         ydl_opts['cookiefile'] = COOKIES_FILE
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        return ydl.extract_info(video_url, download=False)
+
 
 
 def is_fragmented(fmt):
