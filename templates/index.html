@@ -64,7 +64,7 @@
   }
   </script>
 
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -191,7 +191,7 @@
       align-items: center;
       gap: 6px;
       font-size: 11px;
-      color: #a1a1aa;
+      color: rgba(255, 255, 255, 0.35);
       padding: 4px 2px 0 2px;
       letter-spacing: 0.03em;
     }
@@ -225,8 +225,8 @@
   <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row md:items-center justify-between gap-y-3 md:gap-4">
     <div class="flex flex-col w-full md:w-auto">
       <div class="flex items-center justify-center md:justify-start gap-2.5">
-        <img src="{{ url_for('static', filename='jungle_logo.webp') }}" alt="Jungle Media Downloader Logo" width="32"
-          height="32" class="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0">
+        <img src="{{ url_for('static', filename='jungle_logo.png') }}" alt="Jungle Media Downloader Logo"
+          class="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0">
         <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white">Jungle Media Downloader</h1>
       </div>
 
@@ -263,8 +263,7 @@
           oninput="toggleClearButton()" onkeydown="if(event.key==='Enter') fetchMedia()">
 
         <button id="btnClearUrl" onclick="clearUrlInput()"
-          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg"
-          aria-label="Clear URL input">
+          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -532,8 +531,7 @@
       class="glass-panel w-full max-w-xs sm:max-w-sm md:max-w-md p-5 sm:p-6 md:p-7 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl transition-all">
 
       <button onclick="toggleTrickModal(false)"
-        class="absolute top-3.5 right-3.5 text-zinc-600 hover:text-zinc-400 transition-colors p-1 rounded-lg"
-        aria-label="Close modal">
+        class="absolute top-3.5 right-3.5 text-zinc-600 hover:text-zinc-400 transition-colors p-1 rounded-lg">
         <svg class="w-4 h-4 sm:w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
@@ -562,10 +560,10 @@
   </div>
 
   <footer class="w-full max-w-5xl border-t border-white/5 pt-6 pb-4 mt-4 text-center text-xs text-gray-400">
-    <p class="mb-2 text-gray-400">
+    <p class="mb-2 text-gray-400>
       Jungle Media Downloader · Open Source · Powered by
       <a href=" https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
-        yt-dlp</a>
+      yt-dlp</a>
       · For personal use only · Respect copyright laws
     </p>
     <p class="flex justify-center gap-4 text-gray-400">
@@ -916,7 +914,7 @@
 
         this.innerHTML = `
           <section class="mt-16 mb-8 w-full max-w-5xl" aria-label="Supported sites">
-            <h2 class="text-lg font-semibold text-gray-300 mb-3">Jungle Supported Sites</h2>
+             <h2 class="text-lg font-semibold text-gray-300 mb-3">Jungle Supported Sites</h2>
 
           <p class="text-sm text-gray-400 mb-4">
             Supports <strong class="text-white">1800+ websites</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> to check if your desired site is available.
@@ -935,7 +933,7 @@
 
               <div class="flex justify-between items-start mb-2 shrink-0">
                 <h3 class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supportive sites</h3>
-                  <button id="close-modal-btn" class="text-zinc-500 hover:text-zinc-300 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer" aria-label="Close sites list modal">
+                <button id="close-modal-btn" class="text-zinc-500 hover:text-zinc-300 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>
