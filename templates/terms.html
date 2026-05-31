@@ -5,6 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terms of Service – Jungle Media Downloader</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
   <meta name="robots" content="index, follow">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,9 +38,11 @@
   <header class="w-full max-w-3xl mb-8 flex flex-col items-center sm:items-start">
     <div class="flex items-center gap-3">
       <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-6 h-6 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>
+        <img src="{{ url_for('static', filename='jungle_logo.png') }}" alt="Jungle Logo"
+          class="w-6 h-6 object-contain shrink-0">
         <h1 class="text-2xl font-bold tracking-tight">Jungle Terms of Service</h1>
       </a>
     </div>

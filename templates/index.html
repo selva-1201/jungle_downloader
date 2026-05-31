@@ -10,52 +10,40 @@
   <meta name="description"
     content="Jungle Media Downloader is a free, open-source utility. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and 1800+ more sites. No login required. MP4 & MP3 supported.">
   <meta name="keywords" content="
-    jungle media downloader, free video downloader, online video downloader, no login video downloader,
-    youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free,
-    instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos,
-    facebook video downloader, facebook reels downloader, facebook mp4 download,
-    tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark,
-    twitter video downloader, x video downloader, twitter mp4 download, download twitter videos,
-    reddit video downloader, reddit mp4 download, download reddit videos,
-    vimeo video downloader, download vimeo videos,
-    twitch clip downloader, twitch vod downloader, download twitch clips,
-    soundcloud mp3 downloader, download soundcloud songs,
-    dailymotion video downloader, download dailymotion videos,
-    pinterest video downloader, download pinterest videos,
-    linkedin video downloader, download linkedin videos,
-    bilibili video downloader, bilibili mp4 download,
-    hotstar video downloader, jiosaavn mp3 downloader, sonyliv downloader, mx player video downloader,
-    niconico video downloader, tumblr video downloader, snapchat video downloader,
-    telegram video downloader, youtube shorts downloader,
-    open source video downloader, browser video downloader, online mp3 converter,
-    video to mp3 converter, download video as mp3, extract audio from video,
-    1800 sites video downloader, multi site video downloader
+    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, hotstar video downloader, jiosaavn mp3 downloader, sonyliv downloader, mx player video downloader, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, 1800 sites video downloader, multi site video downloader
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
-  <link rel="canonical" href="[jungle_url]">
+  <link rel="canonical" href="request.url_root">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="[jungle_url]">
+  <meta property="og:url" content="request.url_root">
   <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
   <meta property="og:description"
     content="Free, open-source video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and 1800+ more. No sign-in needed. Download MP4 & MP3 instantly.">
-  <meta property="og:image" content="[jungle_url]og-image.jpg">
+  <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
   <meta property="og:site_name" content="Jungle Media Downloader">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="[jungle_url]">
+  <meta name="twitter:url" content="request.url_root">
   <meta name="twitter:title" content="Jungle Media Downloader – Download from 1800+ Sites">
   <meta name="twitter:description"
     content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and 1800+ more sites. MP4 & MP3.">
-  <meta name="twitter:image" content="[jungle_url]og-image.jpg">
+  <meta name="twitter:image" content="{{ url_for('static', filename='og-image.png') }}">
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Jungle Media Downloader",
-    "url": "[jungle_url]",
+    "url": "request.url_root",
     "description": "Free open-source media downloader supporting 1800+ websites. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",
@@ -76,11 +64,11 @@
   }
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    media="print" onload="this.media='all'">
 
   <style>
     body {
@@ -203,7 +191,7 @@
       align-items: center;
       gap: 6px;
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.35);
+      color: #a1a1aa;
       padding: 4px 2px 0 2px;
       letter-spacing: 0.03em;
     }
@@ -211,32 +199,58 @@
     .duration-info .dot {
       font-size: 8px;
     }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 
 <body class="min-h-screen flex flex-col items-center py-12 px-4 antialiased">
 
-  <header class="w-full max-w-5xl mb-8 flex flex-row items-center justify-between gap-4">
-    <div class="flex flex-col items-start">
-      <div class="flex items-center gap-3">
-        <svg class="w-8 h-8 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-        </svg>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">Jungle Media Downloader</h1>
+  <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row md:items-center justify-between gap-y-3 md:gap-4">
+    <div class="flex flex-col w-full md:w-auto">
+      <div class="flex items-center justify-center md:justify-start gap-2.5">
+        <img src="{{ url_for('static', filename='jungle_logo.webp') }}" alt="Jungle Media Downloader Logo" width="32"
+          height="32" class="w-7 h-7 sm:w-8 sm:h-8 object-contain shrink-0">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white">Jungle Media Downloader</h1>
       </div>
-      <p class="text-gray-400 mt-1 text-xs sm:text-sm tracking-wide">Free media downloader · 1850+ sites · No login
-        required · Open source</p>
+
+      <div class="flex flex-row items-center justify-between mt-2 md:mt-1 w-full">
+        <p class="text-gray-400 text-[11px] sm:text-xs tracking-wide">Free multi-platform downloader · Open source</p>
+
+        <button onclick="toggleTrickModal(true)"
+          class="flex md:hidden flex-row items-center gap-1.5 px-3 py-1.5 text-white font-bold text-[11px] uppercase tracking-wide cursor-pointer bg-zinc-900/90 border border-[#25D366]/30 rounded-lg shadow-[0_0_12px_rgba(37,211,102,0.25)] hover:shadow-[0_0_18px_rgba(37,211,102,0.45)] transition-all active:scale-95 shrink-0">
+          <svg class="w-3.5 h-3.5 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.908.533 3.69 1.454 5.212L2 22l4.93-.1.144-.074a9.96 9.96 0 0 0 4.93 1.295c5.524 0 10.004-4.48 10.004-10.004C22.008 6.48 17.528 2 12.004 2zm5.772 13.042c-.246.696-1.222 1.282-1.686 1.342-.464.06-1.042.086-1.684-.118a10.084 10.084 0 0 1-3.692-2.174 11.233 11.233 0 0 1-2.544-3.15c-.416-.714-.648-1.464-.648-2.204 0-1.12.558-1.674.84-1.956.28-.28.534-.348.718-.348.184 0 .368.002.526.012.166.01.394-.064.614.464.226.544.774 1.884.842 2.02.068.138.114.298.022.484-.092.184-.14.298-.276.458-.136.16-.288.358-.412.48-.14.134-.286.28-.124.56.162.276.718 1.186 1.538 1.916.704.624 1.3.816 1.58.956.28.14.444.116.606-.068.162-.184.694-.808.88-1.084.186-.276.372-.232.628-.136.258.096 1.632.77 1.912.906.28.136.466.204.534.322.07.118.07.684-.176 1.382z" />
+          </svg>
+          <span class="text-white">WA Trick</span>
+        </button>
+      </div>
     </div>
 
     <button onclick="toggleTrickModal(true)"
-      class="flex flex-col items-center gap-1 bg-transparent border-none outline-none cursor-pointer group text-zinc-500 hover:text-zinc-300 transition-colors shrink-0">
-      <svg class="w-6 h-6 text-zinc-500 group-hover:text-[#25D366] transition-colors" fill="currentColor"
-        viewBox="0 0 24 24">
+      class="hidden md:flex flex-row items-center gap-2 px-4 py-2 text-white font-extrabold text-[11px] uppercase tracking-wider cursor-pointer bg-zinc-900/90 border border-[#25D366]/30 rounded-xl shadow-[0_0_15px_rgba(37,211,102,0.25)] hover:shadow-[0_0_22px_rgba(37,211,102,0.5)] transition-all active:scale-95 shrink-0">
+      <svg class="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
         <path
           d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.908.533 3.69 1.454 5.212L2 22l4.93-.1.144-.074a9.96 9.96 0 0 0 4.93 1.295c5.524 0 10.004-4.48 10.004-10.004C22.008 6.48 17.528 2 12.004 2zm5.772 13.042c-.246.696-1.222 1.282-1.686 1.342-.464.06-1.042.086-1.684-.118a10.084 10.084 0 0 1-3.692-2.174 11.233 11.233 0 0 1-2.544-3.15c-.416-.714-.648-1.464-.648-2.204 0-1.12.558-1.674.84-1.956.28-.28.534-.348.718-.348.184 0 .368.002.526.012.166.01.394-.064.614.464.226.544.774 1.884.842 2.02.068.138.114.298.022.484-.092.184-.14.298-.276.458-.136.16-.288.358-.412.48-.14.134-.286.28-.124.56.162.276.718 1.186 1.538 1.916.704.624 1.3.816 1.58.956.28.14.444.116.606-.068.162-.184.694-.808.88-1.084.186-.276.372-.232.628-.136.258.096 1.632.77 1.912.906.28.136.466.204.534.322.07.118.07.684-.176 1.382z" />
       </svg>
-      <span class="text-[9px] uppercase font-bold tracking-wider group-hover:text-zinc-300 transition-colors">Status
-        Save</span>
+      <span class="text-white">Status Save</span>
     </button>
   </header>
 
@@ -249,7 +263,8 @@
           oninput="toggleClearButton()" onkeydown="if(event.key==='Enter') fetchMedia()">
 
         <button id="btnClearUrl" onclick="clearUrlInput()"
-          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg">
+          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg"
+          aria-label="Clear URL input">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -257,7 +272,7 @@
       </div>
 
       <button onclick="fetchMedia()" id="btnSubmit"
-        class="glass-btn flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-medium text-white md:w-auto w-full shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+        class="glass-btn flex items-center justify-center gap-2 px-8 py-2.5 md:py-4 rounded-xl font-medium text-white md:w-auto w-full shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
         <span id="btnSubmitText" class="flex items-center gap-2">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -279,29 +294,22 @@
     <div id="errorBox"
       class="hidden glass-panel border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-center text-sm"></div>
 
-    <div id="loaderState"
-      class="hidden w-full flex-col lg:flex-row gap-8 lg:gap-0 lg:divide-x lg:divide-gray-800/60 glass-panel p-6 rounded-2xl fade-in">
-      <div class="w-full lg:w-1/2 flex flex-col gap-4 lg:pr-8">
-        <div class="h-4 skeleton rounded-xl w-32 mb-2"></div>
-        <div class="w-full glass-panel rounded-2xl p-2">
-          <div class="h-56 skeleton rounded-xl w-full"></div>
-        </div>
-        <div class="h-16 skeleton rounded-xl w-full"></div>
-        <div class="h-16 skeleton rounded-xl w-full"></div>
-      </div>
-      <div class="w-full lg:w-1/2 flex flex-col gap-4 lg:pl-8">
-        <div class="h-4 skeleton rounded-xl w-32 mb-2"></div>
-        <div class="w-full glass-panel rounded-2xl p-4 bg-zinc-900/10 h-[76px] flex items-center">
-          <div class="h-6 skeleton rounded-full w-full"></div>
-        </div>
-        <div class="h-16 skeleton rounded-xl w-full"></div>
-        <div class="h-16 skeleton rounded-xl w-full"></div>
-      </div>
-    </div>
-
     <div id="resultContainer">
 
-      <div id="mobileTabsWrapper" class="flex lg:hidden gap-2 mb-6 p-1 glass-panel rounded-xl">
+      <div id="initialInstruction"
+        class="w-full text-center p-8 border border-dashed border-zinc-800/80 rounded-2xl bg-zinc-900/5 fade-in text-zinc-400">
+        <svg class="w-8 h-8 mx-auto mb-3 text-zinc-600 animate-pulse" fill="none" stroke="currentColor"
+          stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+          </path>
+        </svg>
+        <p class="text-sm tracking-wide font-medium">Paste your video URL and click "Get Link" to generate download
+          options.
+        </p>
+      </div>
+
+      <div id="mobileTabsWrapper" class="hidden gap-2 mb-6 p-1 glass-panel rounded-xl">
         <button onclick="switchTab('video')" id="tabVideo"
           class="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors tab-active text-white">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,6 +328,26 @@
           </svg>
           Audio
         </button>
+      </div>
+
+      <div id="loaderState"
+        class="hidden w-full flex-col lg:flex-row gap-8 lg:gap-0 lg:divide-x lg:divide-gray-800/60 glass-panel p-6 rounded-2xl fade-in">
+        <div class="w-full lg:w-1/2 flex flex-col gap-4 lg:pr-8">
+          <div class="h-4 skeleton rounded-xl w-32 mb-2"></div>
+          <div class="w-full glass-panel rounded-2xl p-2">
+            <div class="h-56 skeleton rounded-xl w-full"></div>
+          </div>
+          <div class="h-16 skeleton rounded-xl w-full"></div>
+          <div class="h-16 skeleton rounded-xl w-full"></div>
+        </div>
+        <div class="w-full lg:w-1/2 flex flex-col gap-4 lg:pl-8">
+          <div class="h-4 skeleton rounded-xl w-32 mb-2"></div>
+          <div class="w-full glass-panel rounded-2xl p-4 bg-zinc-900/10 h-[76px] flex items-center">
+            <div class="h-6 skeleton rounded-full w-full"></div>
+          </div>
+          <div class="h-16 skeleton rounded-xl w-full"></div>
+          <div class="h-16 skeleton rounded-xl w-full"></div>
+        </div>
       </div>
 
       <h2 id="mediaTitle" class="text-base font-medium text-gray-200 line-clamp-2 px-1 mb-6 hidden"></h2>
@@ -386,53 +414,7 @@
       </div>
     </div>
 
-    <section class="mt-16 mb-8 w-full max-w-5xl" aria-label="Supported sites">
-      <h2 class="text-lg font-semibold text-gray-300 mb-3">Supported Sites</h2>
-      <p class="text-sm text-gray-500 mb-4">
-        Jungle Media Downloader supports <strong class="text-gray-400">1800+ websites</strong> powered by yt-dlp.
-        Popular ones include:
-      </p>
-      <div class="flex flex-wrap gap-2 text-xs text-white-600">
-        <span class="glass-card px-3 py-1 rounded-full">YouTube</span>
-        <span class="glass-card px-3 py-1 rounded-full">YouTube Shorts</span>
-        <span class="glass-card px-3 py-1 rounded-full">Instagram</span>
-        <span class="glass-card px-3 py-1 rounded-full">Instagram Reels</span>
-        <span class="glass-card px-3 py-1 rounded-full">TikTok</span>
-        <span class="glass-card px-3 py-1 rounded-full">Twitter / X</span>
-        <span class="glass-card px-3 py-1 rounded-full">Facebook</span>
-        <span class="glass-card px-3 py-1 rounded-full">Facebook Reels</span>
-        <span class="glass-card px-3 py-1 rounded-full">Reddit</span>
-        <span class="glass-card px-3 py-1 rounded-full">Vimeo</span>
-        <span class="glass-card px-3 py-1 rounded-full">Twitch</span>
-        <span class="glass-card px-3 py-1 rounded-full">SoundCloud</span>
-        <span class="glass-card px-3 py-1 rounded-full">Dailymotion</span>
-        <span class="glass-card px-3 py-1 rounded-full">Pinterest</span>
-        <span class="glass-card px-3 py-1 rounded-full">LinkedIn</span>
-        <span class="glass-card px-3 py-1 rounded-full">Bilibili</span>
-        <span class="glass-card px-3 py-1 rounded-full">JioHotstar</span>
-        <span class="glass-card px-3 py-1 rounded-full">JioSaavn</span>
-        <span class="glass-card px-3 py-1 rounded-full">SonyLIV</span>
-        <span class="glass-card px-3 py-1 rounded-full">MX Player</span>
-        <span class="glass-card px-3 py-1 rounded-full">Niconico</span>
-        <span class="glass-card px-3 py-1 rounded-full">Tumblr</span>
-        <span class="glass-card px-3 py-1 rounded-full">Snapchat</span>
-        <span class="glass-card px-3 py-1 rounded-full">Telegram</span>
-        <span class="glass-card px-3 py-1 rounded-full">9GAG</span>
-        <span class="glass-card px-3 py-1 rounded-full">Rumble</span>
-        <span class="glass-card px-3 py-1 rounded-full">Odysee</span>
-        <span class="glass-card px-3 py-1 rounded-full">BitChute</span>
-        <span class="glass-card px-3 py-1 rounded-full">Peertube</span>
-        <span class="glass-card px-3 py-1 rounded-full">Bandcamp</span>
-        <span class="glass-card px-3 py-1 rounded-full">Mixcloud</span>
-        <span class="glass-card px-3 py-1 rounded-full">Apple Podcasts</span>
-        <span class="glass-card px-3 py-1 rounded-full">Spotify Podcasts</span>
-        <span class="glass-card px-3 py-1 rounded-full">Al Jazeera</span>
-        <span class="glass-card px-3 py-1 rounded-full">BBC</span>
-        <span class="glass-card px-3 py-1 rounded-full">CNN</span>
-        <span class="glass-card px-3 py-1 rounded-full">ABC News</span>
-        <span class="glass-card px-3 py-1 rounded-full text-gray-500 italic">+ 1760 more…</span>
-      </div>
-    </section>
+    <supported-sites></supported-sites>
 
     <section class="mt-4 mb-12 w-full max-w-5xl" aria-label="FAQ">
       <h2 class="text-lg font-semibold text-gray-300 mb-4">Frequently Asked Questions</h2>
@@ -545,47 +527,51 @@
   </main>
 
   <div id="trickModal"
-    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
-    <div class="glass-panel max-w-xs w-full p-5 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl">
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm确定 fade-in">
+    <div
+      class="glass-panel w-full max-w-xs sm:max-w-sm md:max-w-md p-5 sm:p-6 md:p-7 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl transition-all">
 
       <button onclick="toggleTrickModal(false)"
-        class="absolute top-3 right-3 text-zinc-600 hover:text-zinc-400 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        class="absolute top-3.5 right-3.5 text-zinc-600 hover:text-zinc-400 transition-colors p-1 rounded-lg"
+        aria-label="Close modal">
+        <svg class="w-4 h-4 sm:w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
 
-      <div class="flex flex-col gap-3 font-mono text-[11px] text-zinc-400 pt-2 text-center">
-        <span class="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">Open your file manager and follow
-          this instruction:</span>
+      <div class="flex flex-col gap-3.5 sm:gap-4 font-mono text-zinc-400 pt-3 text-center">
+        <span class="text-zinc-500 font-semibold uppercase tracking-wider text-[10px] sm:text-xs">
+          Open your file manager and follow this instruction:
+        </span>
 
-        <code class="bg-white/5 p-2.5 rounded border border-white/5 text-zinc-200 select-all break-all leading-normal">
+        <code
+          class="bg-white/5 p-3 rounded border border-white/5 text-zinc-200 select-all break-all text-xs sm:text-sm tracking-normal leading-relaxed font-mono">
           Android &gt; Media &gt; com.whatsapp &gt; WhatsApp &gt; Media &gt; .Statuses
         </code>
 
-        <p class="text-[10px] text-zinc-500 leading-normal border-t border-white/5 pt-2">
+        <p class="text-xs sm:text-sm text-zinc-500 leading-relaxed border-t border-white/5 pt-3.5">
           This is a hidden local folder. Select any status asset you wish to retrieve, copy it, and paste it into your
           preferred storage directory.
         </p>
 
-        <p class="text-[9px] text-zinc-600 uppercase tracking-wider font-semibold">
+        <p class="text-[10px] sm:text-xs text-zinc-600 uppercase tracking-wider font-semibold">
           Note: Enable "Show hidden files" in file manager settings.
         </p>
       </div>
     </div>
   </div>
 
-  <footer class="w-full max-w-5xl border-t border-white/5 pt-6 pb-4 mt-4 text-center text-xs text-gray-600">
-    <p class="mb-2">
+  <footer class="w-full max-w-5xl border-t border-white/5 pt-6 pb-4 mt-4 text-center text-xs text-gray-400">
+    <p class="mb-2 text-gray-400">
       Jungle Media Downloader · Open Source · Powered by
-      <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener"
-        class="underline hover:text-gray-400">yt-dlp</a>
+      <a href=" https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
+        yt-dlp</a>
       · For personal use only · Respect copyright laws
     </p>
-    <p class="flex justify-center gap-4 text-gray-500">
-      <a href="/terms.html" class="hover:underline hover:text-gray-400">Terms of Service</a>
+    <p class="flex justify-center gap-4 text-gray-400">
+      <a href="/terms.html" class="text-gray-400 hover:underline hover:text-white">Terms of Service</a>
       <span>·</span>
-      <a href="/privacy.html" class="hover:underline hover:text-gray-400">Privacy Policy</a>
+      <a href="/privacy.html" class="text-gray-400 hover:underline hover:text-white">Privacy Policy</a>
     </p>
   </footer>
 
@@ -640,6 +626,12 @@
       const urlInput = document.getElementById('videoUrl').value.trim();
       if (!urlInput) return;
 
+      document.getElementById('initialInstruction').classList.add('hidden');
+
+      const tabsWrapper = document.getElementById('mobileTabsWrapper');
+      tabsWrapper.classList.remove('hidden');
+      tabsWrapper.classList.add('flex');
+
       document.getElementById('errorBox').classList.add('hidden');
       document.getElementById('resultState').classList.add('hidden');
       document.getElementById('mediaTitle').classList.add('hidden');
@@ -683,6 +675,9 @@
           currentMediaData = data;
           renderMediaInterface(data);
         } else {
+          document.getElementById('mobileTabsWrapper').classList.add('hidden');
+          document.getElementById('mobileTabsWrapper').classList.remove('flex');
+          document.getElementById('initialInstruction').classList.remove('hidden');
           showError(data.error || 'Failed to extract media options.');
         }
       } catch (err) {
@@ -692,6 +687,10 @@
         textNode.classList.remove('hidden');
         loaderNode.classList.add('hidden');
         loaderNode.classList.remove('flex');
+
+        document.getElementById('mobileTabsWrapper').classList.add('hidden');
+        document.getElementById('mobileTabsWrapper').classList.remove('flex');
+        document.getElementById('initialInstruction').classList.remove('hidden');
         showError('Network error. Please try again.');
       }
     }
@@ -903,6 +902,120 @@
     window.addEventListener('resize', () => {
       if (currentMediaData) handleResponsiveLayoutView();
     });
+  </script>
+
+  <script>
+    class SupportedSites extends HTMLElement {
+      connectedCallback() {
+        this.sites = ['10play', '10play:season', '17live', '17live:clip', '17live:vod', '1News', '1tv', '1tv:live', '20min', '23video', '247sports', '24tv.ua', '3qsdn', '3sat', '4tube', '56.com', '7plus', '8tracks', '9c9media', '9gag', '9News', '9now.com.au', 'abc.net.au', 'abc.net.au:iview', 'abc.net.au:iview:showseries', 'abcnews', 'abcnews:video', 'abcotvs', 'abcotvs:clips', 'AbemaTV', 'AbemaTVTitle', 'AcademicEarth:Course', 'acast', 'acast:channel', 'AcFunBangumi', 'AcFunVideo', 'ADN', 'ADNSeason', 'AdobeConnect', 'adobetv', 'AdultSwim', 'aenetworks', 'aenetworks:collection', 'aenetworks:show', 'AeonCo', 'agalega:videos', 'AirTV', 'AitubeKZVideo', 'Alibaba', 'AliExpressLive', 'AlJazeera', 'Allocine', 'Allstar', 'AllstarProfile', 'AlphaPorno', 'Alsace20TV', 'Alsace20TVEmbed', 'altcensored', 'altcensored:channel', 'Alura', 'AluraCourse', 'AmadeusTV', 'Amara', 'AmazonMiniTV', 'amazonminitv:season', 'amazonminitv:series', 'AmazonReviews', 'AmazonStore', 'AMCNetworks', 'AmericasTestKitchen', 'AmericasTestKitchenSeason', 'AmHistoryChannel', 'AnchorFMEpisode', 'anderetijden', 'Angel', 'AnimalPlanet', 'ant1newsgr:article', 'ant1newsgr:embed', 'antenna:watch', 'Anvato', 'aol.com', 'APA', 'Aparat', 'apple:music:connect', 'ApplePodcasts', 'appletrailers', 'appletrailers:section', 'archive.org', 'ArcPublishing', 'ARD', 'ARDAudiothek', 'ARDAudiothekPlaylist', 'ARDMediathek', 'ARDMediathekCollection', 'Art19', 'Art19Show', 'arte.sky.it', 'ArteTV', 'ArteTVCategory', 'ArteTVEmbed', 'ArteTVPlaylist', 'asobichannel', 'asobichannel:tag', 'AsobiStage', 'AtresPlayer', 'AtScaleConfEvent', 'ATVAt', 'AudiMedia', 'AudioBoom', 'Audiodraft:custom', 'Audiodraft:generic', 'audiomack', 'audiomack:album', 'Audius', 'audius:artist', 'audius:playlist', 'audius:track', 'AWAAN', 'awaan:live', 'awaan:season', 'awaan:video', 'axs.tv', 'AZMedien', 'BaiduVideo', 'BanBye', 'BanByeChannel', 'Bandcamp', 'Bandcamp:album', 'Bandcamp:user', 'Bandcamp:weekly', 'Bandlab', 'BandlabPlaylist', 'BannedVideo', 'bbc', 'bbc.co.uk', 'bbc.co.uk:article', 'bbc.co.uk:iplayer:episodes', 'bbc.co.uk:iplayer:group', 'bbc.co.uk:playlist', 'BBVTV', 'BBVTVLive', 'BBVTVRecordings', 'BeaconTv', 'BeatBumpPlaylist', 'BeatBumpVideo', 'Beatport', 'Beeg', 'BehindKink', 'BerufeTV', 'Bet', 'bfi:player', 'bfmtv', 'bfmtv:article', 'bfmtv:live', 'bibeltv:live', 'bibeltv:series', 'bibeltv:video', 'Bigflix', 'Bigo', 'Bild', 'BiliBili', 'Bilibili category extractor', 'BilibiliAudio', 'BilibiliAudioAlbum', 'BiliBiliBangumi', 'BiliBiliBangumiMedia', 'BiliBiliBangumiSeason', 'BilibiliCheese', 'BilibiliCheeseSeason', 'BilibiliCollectionList', 'BiliBiliDynamic', 'BilibiliFavoritesList', 'BiliBiliPlayer', 'BilibiliPlaylist', 'BiliBiliSearch', 'BilibiliSeriesList', 'BilibiliSpaceAudio', 'BilibiliSpaceVideo', 'BilibiliWatchlater', 'BiliIntl', 'biliIntl:series', 'BiliLive', 'BioBioChileTV', 'Biography', 'BitChute', 'BitChuteChannel', 'Bitmovin', 'BlackboardCollaborate', 'BlackboardCollaborateLaunch', 'BleacherReport', 'BleacherReportCMS', 'blerp', 'blogger.com', 'Bloomberg', 'Bluesky', 'BokeCC', 'BongaCams', 'Boosty', 'BostonGlobe', 'Box', 'BoxCastVideo', 'Bpb', 'BR', 'BrainPOP', 'BrainPOPELL', 'BrainPOPEsp', 'BrainPOPFr', 'BrainPOPIl', 'BrainPOPJr', 'BravoTV', 'BreitBart', 'brightcove:legacy', 'brightcove:new', 'Brilliantpala:Classes', 'Brilliantpala:Elearn', 'bt:article', 'bt:vestlendingen', 'BTVPlus', 'Bundesliga', 'Bundestag', 'BunnyCdn', 'BusinessInsider', 'BuzzFeed', 'BYUtv', 'CaffeineTV', 'Callin', 'Caltrans', 'CAM4', 'Camdemy', 'CamdemyFolder', 'CamFMEpisode', 'CamFMShow', 'CamModels', 'Camsoda', 'CamtasiaEmbed', 'Canal1', 'CanalAlpha', 'canalc2.tv', 'Canalplus', 'Canalsurmas', 'CaracolTvPlay', 'cbc.ca', 'cbc.ca:listen', 'cbc.ca:player', 'cbc.ca:player:playlist', 'CBS', 'CBSLocal', 'CBSLocalArticle', 'CBSLocalLive', 'cbsnews', 'cbsnews:embed', 'cbsnews:live', 'cbsnews:livevideo', 'cbssports', 'cbssports:embed', 'CCMA', 'CCTV', 'CDA', 'CDAFolder', 'Cellebrite', 'CeskaTelevize', 'CGTN', 'CharlieRose', 'Chaturbate', 'Chilloutzone', 'chzzk:live', 'chzzk:video', 'cielotv.it', 'Cinemax', 'CinetecaMilano', 'Cineverse', 'CineverseDetails', 'CiscoLiveSearch', 'CiscoLiveSession', 'ciscowebex', 'CJSW', 'Clipchamp', 'Clippit', 'ClipRs', 'CloserToTruth', 'CloudflareStream', 'CloudyCDN', 'Clubic', 'Clyp', 'CNBCVideo', 'CNN', 'CNNIndonesia', 'ComedyCentral', 'ConanClassic', 'CondeNast', 'CONtv', 'CookingChannel', 'Corus', 'Coub', 'CozyTV', 'cp24', 'cpac', 'cpac:playlist', 'Cracked', 'Craftsy', 'croatian.film', 'CrooksAndLiars', 'CrowdBunker', 'CrowdBunkerChannel', 'Crtvg', 'CSpan', 'CSpanCongress', 'CtsNews', 'CTVNews', 'cu.ntv.co.jp', 'CultureUnplugged', 'curiositystream', 'curiositystream:collections', 'curiositystream:series', 'Cybrary', 'CybraryCourse', 'DacastPlaylist', 'DacastVOD', 'DagelijkseKost', 'DailyMail', 'dailymotion', 'dailymotion:playlist', 'dailymotion:search', 'dailymotion:user', 'DailyWire', 'DailyWirePodcast', 'damtomo:record', 'damtomo:video', 'dangalplay', 'dangalplay:season', 'daum.net', 'daum.net:clip', 'daum.net:playlist', 'daum.net:user', 'daystar:clip', 'DBTV', 'DctpTv', 'democracynow', 'DestinationAmerica', 'DetikEmbed', 'DeuxM', 'DeuxMNews', 'DHM', 'DigitalConcertHall', 'DigitallySpeaking', 'Digiteka', 'Digiview', 'DiscogsReleasePlaylist', 'DiscoveryLife', 'DiscoveryNetworksDe', 'DiscoveryPlus', 'DiscoveryPlusIndia', 'DiscoveryPlusIndiaShow', 'DiscoveryPlusItaly', 'DiscoveryPlusItalyShow', 'Disney', 'dlf', 'dlf:corpus', 'dlive:stream', 'dlive:vod', 'Douyin', 'DouyuShow', 'DouyuTV', 'DPlay', 'DRBonanza', 'Drooble', 'Dropbox', 'Dropout', 'DropoutSeason', 'DrTalks', 'DrTuber', 'drtv', 'drtv:live', 'drtv:season', 'drtv:series', 'DTube', 'duboku', 'duboku:list', 'Dumpert', 'Duoplay', 'dvtv', 'dw', 'dw:article', 'dzen.ru', 'dzen.ru:channel', 'EbaumsWorld', 'Ebay', 'egghead:course', 'egghead:lesson', 'eggs:artist', 'eggs:single', 'EinsUndEinsTV', 'EinsUndEinsTVLive', 'EinsUndEinsTVRecordings', 'eitb.tv', 'ElementorEmbed', 'Elonet', 'ElPais', 'ElTreceTV', 'Embedly', 'EMPFlix', 'Epicon', 'EpiconSeries', 'EpidemicSound', 'eplus', 'Epoch', 'Eporner', 'Erocast', 'EroProfile', 'EroProfile:album', 'ERRArhiiv', 'ERRJupiter', 'ertflix', 'ertflix:codename', 'ertwebtv:embed', 'ESPN', 'ESPNArticle', 'ESPNCricInfo', 'EttuTv', 'Europa', 'EuroParlWebstream', 'EuropeanTour', 'Eurosport', 'EUScreen', 'EWETV', 'EWETVLive', 'EWETVRecordings', 'Expressen', 'EyedoTV', 'facebook', 'facebook:ads', 'facebook:reel', 'FacebookPluginsVideo', 'fancode:live', 'fancode:vod', 'Fathom', 'Faulio', 'FaulioLive', 'faz.net', 'fc2', 'fc2:embed', 'fc2:live', 'Fczenit', 'Fifa', 'FilmArchiv', 'filmon', 'filmon:channel', 'Filmweb', 'FiveThirtyEight', 'FiveTV', 'Flickr', 'Floatplane', 'FloatplaneChannel', 'Folketinget', 'FoodNetwork', 'FootyRoom', 'Formula1', 'FOX', 'FOX9', 'FOX9News', 'foxnews', 'foxnews:article', 'FoxNewsVideo', 'FoxSports', 'fptplay', 'FrancaisFacile', 'FranceCulture', 'franceinfo', 'FranceInter', 'francetv', 'francetv:site', 'Freesound', 'freespeech.org', 'freetv:series', 'FreeTvMovies', 'FrontendMasters', 'FrontendMastersCourse', 'FrontendMastersLesson', 'FujiTVFODPlus7', 'Funk', 'Funker530', 'Fux', 'FuyinTV', 'Gab', 'GabTV', 'Gaia', 'GameDevTVDashboard', 'GameJolt', 'GameJoltCommunity', 'GameJoltGame', 'GameJoltGameSoundtrack', 'GameJoltSearch', 'GameJoltUser', 'GameSpot', 'GameStar', 'Gaskrank', 'Gazeta', 'GBNews', 'GDCVault', 'GediDigital', 'gem.cbc.ca', 'gem.cbc.ca:live', 'gem.cbc.ca:olympics', 'gem.cbc.ca:playlist', 'Genius', 'GeniusLyrics', 'Germanupa', 'GetCourseRu', 'GetCourseRuPlayer', 'Gettr', 'GettrStreaming', 'GiantBomb', 'GlattvisionTV', 'GlattvisionTVLive', 'GlattvisionTVRecordings', 'Glide', 'GlobalPlayerAudio', 'GlobalPlayerAudioEpisode', 'GlobalPlayerLive', 'GlobalPlayerLivePlaylist', 'GlobalPlayerVideo', 'Globo', 'GloboArticle', 'glomex', 'glomex:embed', 'GMANetworkVideo', 'Go', 'GoDiscovery', 'GodResource', 'GodTube', 'Gofile', 'Golem', 'goodgame:stream', 'google:podcasts', 'google:podcasts:feed', 'GoogleDrive', 'GoogleDrive:Folder', 'GoPro', 'Goshgay', 'GoToStage', 'GPUTechConf', 'Graspop', 'Gronkh', 'gronkh:feed', 'gronkh:vods', 'Groupon', 'Harpodeon', 'hbo', 'HearThisAt', 'Heise', 'HellPorno', 'hetklokhuis', 'hgtv.com:show', 'HGTVDe', 'HGTVUsa', 'HiDive', 'HistoricFilms', 'history:player', 'history:topic', 'HitRecord', 'hketv', 'HollywoodReporter', 'HollywoodReporterPlaylist', 'Holodex', 'HotNewHipHop', 'hotstar', 'hotstar:series', 'hrfernsehen', 'HRTi', 'HRTiPlaylist', 'HSEProduct', 'HSEShow', 'html5', 'Huajiao', 'HuffPost', 'Hungama', 'HungamaAlbumPlaylist', 'HungamaSong', 'huya:live', 'huya:video', 'Hypem', 'Hytale', 'Icareus', 'IdagioAlbum', 'IdagioPersonalPlaylist', 'IdagioPlaylist', 'IdagioRecording', 'IdagioTrack', 'IdolPlus', 'iflix:episode', 'IflixSeries', 'ign.com', 'IGNArticle', 'IGNVideo', 'iheartradio', 'iheartradio:podcast', 'IlPost', 'Iltalehti', 'imdb', 'imdb:list', 'Imgur', 'imgur:album', 'imgur:gallery', 'Ina', 'Inc', 'IndavideoEmbed', 'InfoQ', 'Instagram', 'instagram:story', 'instagram:tag', 'instagram:user', 'InstagramIOS', 'Internazionale', 'InternetVideoArchive', 'InvestigationDiscovery', 'IPrima', 'IPrimaCNN', 'iq.com', 'iq.com:album', 'iqiyi', 'IslamChannel', 'IslamChannelSeries', 'IsraelNationalNews', 'ITProTV', 'ITProTVCourse', 'ITV', 'ITVBTCC', 'ivi', 'ivi:compilation', 'ivideon', 'Ivoox', 'IVXPlayer', 'iwara', 'iwara:playlist', 'iwara:user', 'Ixigua', 'Izlesene', 'Jamendo', 'JamendoAlbum', 'JeuxVideo', 'jiosaavn:album', 'jiosaavn:artist', 'jiosaavn:playlist', 'jiosaavn:show', 'jiosaavn:show:playlist', 'jiosaavn:song', 'Joj', 'Jove', 'JStream', 'JTBC', 'JTBC:program', 'JWPlatform', 'Kakao', 'Kaltura', 'KankaNews', 'Karaoketv', 'Katsomo', 'KelbyOne', 'Kenh14Playlist', 'Kenh14Video', 'khanacademy', 'khanacademy:unit', 'kick:clips', 'kick:live', 'kick:vod', 'Kicker', 'KickStarter', 'Kika', 'KikaPlaylist', 'kinja:embed', 'KinoPoisk', 'Kommunetv', 'KompasVideo', 'Koo', 'KrasView', 'KTH', 'Ku6', 'KukuluLive', 'kuwo:album', 'kuwo:category', 'kuwo:chart', 'kuwo:mv', 'kuwo:singer', 'kuwo:song', 'la7.it', 'la7.it:pod:episode', 'la7.it:podcast', 'laracasts', 'laracasts:series', 'LastFM', 'LastFMPlaylist', 'LastFMUser', 'LaXarxaMes', 'lbry', 'lbry:channel', 'lbry:playlist', 'LCI', 'Lcp', 'LcpPlay', 'Le', 'LearningOnScreen', 'Lecture2Go', 'Lecturio', 'LecturioCourse', 'LecturioDeCourse', 'LeFigaroVideoEmbed', 'LeFigaroVideoSection', 'LEGO', 'Lemonde', 'Lenta', 'LePlaylist', 'LetvCloud', 'Libsyn', 'life', 'life:embed', 'likee', 'likee:user', 'LinkedIn', 'linkedin:events', 'linkedin:learning', 'linkedin:learning:course', 'Liputan6', 'ListenNotes', 'LiTV', 'LiveJournal', 'livestream', 'livestream:original', 'Livestreamfails', 'Lnk', 'loc', 'Locipo', 'LocipoPlaylist', 'Loco', 'loom', 'loom:folder', 'LoveHomePorn', 'LRTRadio', 'LRTStream', 'LRTVOD', 'LSMLREmbed', 'LSMLTVEmbed', 'LSMReplay', 'Lumni', 'lynda', 'lynda:course', 'maariv.co.il', 'MagellanTV', 'MagentaMusik', 'mailru', 'mailru:music', 'mailru:music:search', 'MainStreaming', 'mangomolo:live', 'mangomolo:video', 'MangoTV', 'ManyVids', 'MaoriTV', 'Markiza', 'MarkizaPage', 'massengeschmack.tv', 'Masters', 'MatchiTV', 'MatchTV', 'mave', 'mave:channel', 'MBN', 'MDR', 'MedalTV', 'media.ccc.de', 'media.ccc.de:lists', 'Mediaite', 'MediaKlikk', 'Medialaan', 'Mediaset', 'MediasetShow', 'Mediasite', 'MediasiteCatalog', 'MediasiteNamedCatalog', 'MediaStream', 'MediaWorksNZVOD', 'Medici', 'megaphone.fm', 'megatvcom', 'megatvcom:embed', 'Meipai', 'MelonVOD', 'Metacritic', 'mewatch', 'MicrosoftBuild', 'MicrosoftEmbed', 'MicrosoftLearnEpisode', 'MicrosoftLearnPlaylist', 'MicrosoftLearnSession', 'MicrosoftMedius', 'microsoftstream', 'minds', 'minds:channel', 'minds:group', 'Minoto', 'mir24.tv', 'mirrativ', 'mirrativ:user', 'MirrorCoUK', 'mixch', 'mixch:archive', 'mixch:movie', 'mixcloud', 'mixcloud:playlist', 'mixcloud:user', 'Mixlr', 'MixlrRecoring', 'MLB', 'MLBArticle', 'MLBTV', 'MLBVideo', 'MLSSoccer', 'MNetTV', 'MNetTVLive', 'MNetTVRecordings', 'MochaVideo', 'Mojevideo', 'Mojvideo', 'Monstercat', 'monstersiren', 'Motherless', 'MotherlessGallery', 'MotherlessGroup', 'MotherlessUploader', 'Motorsport', 'MovieFap', 'moviepilot', 'MoviewPlay', 'Moviezine', 'MovingImage', 'MSN', 'mtg', 'mtv', 'MTVUutisetArticle', 'MuenchenTV', 'MujRozhlas', 'Murrtube', 'MurrtubeUser', 'MuseAI', 'MuseScore', 'MusicdexAlbum', 'MusicdexArtist', 'MusicdexPlaylist', 'MusicdexSong', 'Mux', 'Mx3', 'Mx3Neo', 'Mx3Volksmusik', 'Mxplayer', 'MxplayerShow', 'MySpace', 'MySpace:album', 'MySpass', 'MyVideoGe', 'MyVidster', 'Mzaalo', 'n-tv.de', 'N1Info:article', 'N1InfoAsset', 'NascarClassics', 'Nate', 'NateProgram', 'natgeo:video', 'NationalGeographicTV', 'Naver', 'Naver:live', 'navernow', 'nba', 'nba:channel', 'nba:embed', 'nba:watch', 'nba:watch:collection', 'nba:watch:embed', 'NBC', 'NBCNews', 'nbcolympics', 'nbcolympics:stream', 'NBCSports', 'NBCSportsStream', 'NBCSportsVPlayer', 'NBCStations', 'ndr', 'ndr:embed', 'ndr:embed:base', 'NDTV', 'nebula:channel', 'nebula:media', 'nebula:season', 'nebula:subscriptions', 'nebula:video', 'NekoHacker', 'NerdCubedFeed', 'Nest', 'NestClip', 'NetAppCollection', 'NetAppVideo', 'netease:album', 'netease:djradio', 'netease:mv', 'netease:playlist', 'netease:program', 'netease:singer', 'netease:song', 'NetPlusTV', 'NetPlusTVLive', 'NetPlusTVRecordings', 'Netverse', 'NetversePlaylist', 'NetverseSearch', 'Netzkino', 'Newgrounds', 'Newgrounds:playlist', 'Newgrounds:user', 'NewsPicks', 'Newsy', 'Nexx', 'NexxEmbed', 'nfb', 'nfb:series', 'NFHSNetwork', 'nfl.com', 'nfl.com:article', 'nfl.com:plus:episode', 'nfl.com:plus:replay', 'NhkForSchoolBangumi', 'NhkForSchoolProgramList', 'NhkForSchoolSubject', 'NhkRadioNewsPage', 'NhkRadiru', 'NhkRadiruLive', 'NhkVod', 'NhkVodProgram', 'nhl.com', 'nick.com', 'niconico', 'niconico:history', 'niconico:live', 'niconico:playlist', 'niconico:series', 'niconico:tag', 'NiconicoChannelPlus', 'NiconicoChannelPlus:channel:lives', 'NiconicoChannelPlus:channel:videos', 'NiconicoUser', 'nicovideo:search', 'nicovideo:search_date', 'nicovideo:search_url', 'NinaProtocol', 'Nintendo', 'Nitter', 'njoy', 'njoy:embed', 'NobelPrize', 'NoicePodcast', 'NonkTube', 'NoodleMagazine', 'NOSNLArticle', 'Nova', 'NovaEmbed', 'NovaPlay', 'NowCanal', 'nowness', 'nowness:playlist', 'nowness:series', 'Noz', 'npo', 'npo.nl:live', 'npo.nl:radio', 'npo.nl:radio:fragment', 'Npr', 'NRK', 'NRKPlaylist', 'NRKRadioPodkast', 'NRKSkole', 'NRKTV', 'NRKTVDirekte', 'NRKTVEpisode', 'NRKTVEpisodes', 'NRKTVSeason', 'NRKTVSeries', 'NRLTV', 'nts.live', 'ntv.ru', 'NubilesPorn', 'nuum:live', 'nuum:media', 'nuum:tab', 'Nuvid', 'NYTimes', 'NYTimesArticle', 'NYTimesCookingGuide', 'NYTimesCookingRecipe', 'nzherald', 'NZOnScreen', 'NZZ', 'ocw.mit.edu', 'Odnoklassniki', 'OfTV', 'OfTVPlaylist', 'OktoberfestTV', 'OlympicsReplay', 'on24', 'OnDemandChinaEpisode', 'OnDemandKorea', 'OnDemandKoreaProgram', 'OneFootball', 'OnePlacePodcast', 'onet.pl', 'onet.tv', 'onet.tv:channel', 'OnetMVP', 'OnionStudios', 'onsen', 'Opencast', 'OpencastPlaylist', 'openrec', 'openrec:capture', 'openrec:movie', 'OraTV', 'orf:fm4:story', 'orf:iptv', 'orf:on', 'orf:podcast', 'orf:radio', 'OsnatelTV', 'OsnatelTVLive', 'OsnatelTVRecordings', 'OutsideTV', 'OwnCloud', 'PacktPub', 'PacktPubCourse', 'PalcoMP3:artist', 'PalcoMP3:song', 'PalcoMP3:video', 'PandaTv', 'Panopto', 'PanoptoList', 'PanoptoPlaylist', 'ParamountPressExpress', 'Parler', 'parliamentlive.tv', 'Parlview', 'parti:livestream', 'parti:video', 'patreon', 'patreon:campaign', 'pbs', 'PBSKids', 'PearVideo', 'PeekVids', 'peer.tv', 'PeerTube', 'PeerTube:Playlist', 'peloton', 'peloton:live', 'PerformGroup', 'periscope', 'periscope:user', 'PGATour', 'PhilharmonieDeParis', 'phoenix.de', 'Photobucket', 'PiaLive', 'Piapro', 'picarto', 'picarto:vod', 'Piksel', 'Pinkbike', 'Pinterest', 'PinterestCollection', 'PiramideTV', 'PiramideTVChannel', 'PlanetMarathi', 'Platzi', 'PlatziCourse', 'play.tv', 'player.sky.it', 'PlayerFm', 'playeur', 'PlayPlusTV', 'PlaySuisse', 'Playtvak', 'PlayVids', 'Playwire', 'pluralsight', 'pluralsight:course', 'PlutoTV', 'PlVideo', 'PlyrEmbed', 'PodbayFM', 'PodbayFMChannel', 'Podchaser', 'podomatic', 'PokerGo', 'PokerGoCollection', 'PolsatGo', 'PolskieRadio', 'polskieradio:audition', 'polskieradio:category', 'polskieradio:legacy', 'polskieradio:player', 'polskieradio:podcast', 'polskieradio:podcast:list', 'Popcorntimes', 'PopcornTV', 'Pornbox', 'PornerBros', 'PornFlip', 'PornHub', 'PornHubPagedVideoList', 'PornHubPlaylist', 'PornHubUser', 'PornHubUserVideosUpload', 'Pornotube', 'PornoVoisines', 'PornoXO', 'PornTop', 'PornTube', 'Pr0gramm', 'PrankCast', 'PrankCastPost', 'PremiershipRugby', 'PressTV', 'ProjectVeritas', 'prosiebensat1', 'PRXAccount', 'PRXSeries', 'prxseries:search', 'prxstories:search', 'PRXStory', 'puhutv', 'puhutv:serie', 'Puls4', 'Pyvideo', 'QDance', 'QingTing', 'qqmusic', 'qqmusic:album', 'qqmusic:mv', 'qqmusic:playlist', 'qqmusic:singer', 'qqmusic:toplist', 'QuantumTV', 'QuantumTVLive', 'QuantumTVRecordings', 'R7', 'R7Article', 'Radiko', 'RadikoRadio', 'radio.de', 'Radio1Be', 'radiocanada', 'radiocanada:audiovideo', 'RadioComercial', 'RadioComercialPlaylist', 'radiofrance', 'RadioFranceLive', 'RadioFrancePodcast', 'RadioFranceProfile', 'RadioFranceProgramSchedule', 'RadioJavan', 'radiokapital', 'radiokapital:show', 'RadioRadicale', 'RadioZetPodcast', 'radlive', 'radlive:channel', 'radlive:season', 'Rai', 'RaiCultura', 'RaiNews', 'RaiPlay', 'RaiPlayLive', 'RaiPlayPlaylist', 'RaiPlaySound', 'RaiPlaySoundLive', 'RaiPlaySoundPlaylist', 'RaiSudtirol', 'RayWenderlich', 'RayWenderlichCourse', 'RbgTum', 'RbgTumCourse', 'RbgTumNewCourse', 'RCS', 'RCSEmbeds', 'RCSVarious', 'RCTIPlus', 'RCTIPlusSeries', 'RCTIPlusTV', 'RDS', 'RedBull', 'RedBullEmbed', 'RedBullTV', 'RedBullTVRrnContent', 'redcdnlivx', 'Reddit', 'RedGifs', 'RedGifsSearch', 'RedGifsUser', 'RedTube', 'RENTV', 'RENTVArticle', 'Restudy', 'Reuters', 'ReverbNation', 'RheinMainTV', 'RideHome', 'RinseFM', 'RinseFMArtistPlaylist', 'RMCDecouverte', 'RockstarGames', 'Rokfin', 'rokfin:channel', 'rokfin:search', 'rokfin:stack', 'RoosterTeeth', 'RoosterTeethSeries', 'RottenTomatoes', 'RoyaLive', 'Rozhlas', 'RozhlasVltava', 'RTBF', 'RTDocumentry', 'RTDocumentryPlaylist', 'rte', 'rte:radio', 'rtl.lu:article', 'rtl.lu:tele-vod, rtl.nl', 'rtl2', 'RTLLuLive', 'RTLLuRadio', 'RTNews', 'RTP', 'RTRFM', 'RTS', 'RTVCKaltura', 'RTVCPlay', 'RTVCPlayEmbed', 'rtve.es:alacarta', 'rtve.es:audio', 'rtve.es:live', 'rtve.es:program', 'rtve.es:television', 'rtvslo.si', 'rtvslo.si:show', 'RudoVideo', 'Rule34Video', 'Rumble', 'RumbleChannel', 'RumbleEmbed', 'Ruptly', 'rutube', 'rutube:channel', 'rutube:embed', 'rutube:movie', 'rutube:person', 'rutube:playlist', 'rutube:tags', 'Ruutu', 'Ruv', 'ruv.is:spila', 'S4C', 'S4CSeries', 'safari', 'safari:api', 'safari:course', 'Saitosan', 'SAKTV', 'SAKTVLive', 'SAKTVRecordings', 'SaltTV', 'SaltTVLive', 'SaltTVRecordings', 'SampleFocus', 'Sangiin', 'Sapo', 'SaucePlus', 'SaucePlusChannel', 'SBS', 'sbs.co.kr', 'sbs.co.kr:allvod_program', 'sbs.co.kr:programs_vod', 'schooltv', 'ScienceChannel', 'Screen9', 'Screencast', 'Screencastify', 'ScreencastOMatic', 'ScreenRec', 'ScrippsNetworks', 'scrippsnetworks:watch', 'Scrolller', 'sejm', 'Sen', 'SenalColombiaLive', 'senate.gov', 'senate.gov:isvp', 'SendtoNews', 'Servus', 'Sexu', 'SeznamZpravy', 'SeznamZpravyArticle', 'Shahid', 'ShahidShow', 'SharePoint', 'ShareVideosEmbed', 'ShemarooMe', 'Shiey', 'ShowRoomLive', 'ShugiinItvLive', 'ShugiinItvLiveRoom', 'ShugiinItvVod', 'SibnetEmbed', 'simplecast', 'simplecast:episode', 'simplecast:podcast', 'Sina', 'Skeb', 'sky.it', 'sky:news', 'sky:news:story', 'sky:sports', 'sky:sports:news', 'SkylineWebcams', 'skynewsarabia:article', 'skynewsarabia:video', 'SkyNewsAU', 'Slideshare', 'SlidesLive', 'Slutload', 'smotrim', 'smotrim:audio', 'smotrim:live', 'smotrim:playlist', 'SnapchatSpotlight', 'Snotr', 'SoftWhiteUnderbelly', 'Sohu', 'SohuV', 'SonyLIV', 'SonyLIVSeries', 'soop', 'soop:catchstory', 'soop:live', 'soop:user', 'soundcloud', 'soundcloud:playlist', 'soundcloud:related', 'soundcloud:search', 'soundcloud:set', 'soundcloud:trackstation', 'soundcloud:user', 'soundcloud:user:permalink', 'SoundcloudEmbed', 'soundgasm', 'soundgasm:profile', 'southpark.cc.com', 'southpark.cc.com:español', 'southpark.de', 'southpark.lat', 'southparkstudios.co.uk', 'southparkstudios.com.br', 'southparkstudios.nu', 'SovietsCloset', 'SovietsClosetPlaylist', 'SpankBang', 'SpankBangPlaylist', 'Spiegel', 'Sport5', 'SportBox', 'sporteurope', 'Spreaker', 'SpreakerShow', 'SpringboardPlatform', 'SproutVideo', 'sr:mediathek', 'SRGSSR', 'SRGSSRPlay', 'StacommuLive', 'StacommuVOD', 'StagePlusVODConcert', 'stanfordoc', 'startrek', 'startv', 'Steam', 'SteamCommunity', 'SteamCommunityBroadcast', 'Stitcher', 'StitcherShow', 'StoryFire', 'StoryFireSeries', 'StoryFireUser', 'Streaks', 'Streamable', 'StreamCZ', 'StreetVoice', 'StretchInternet', 'Stripchat', 'stv:player', 'stvr', 'Subsplash', 'subsplash:playlist', 'Substack', 'SunPorno', 'sverigesradio:episode', 'sverigesradio:publication', 'svt:page', 'svt:play', 'svt:play:series', 'SwearnetEpisode', 'Syfy', 'SYVDK', 'SztvHu', 't-online.de', 'Tagesschau', 'TapTapApp', 'TapTapAppIntl', 'TapTapMoment', 'TapTapPostIntl', 'tarangplus:episodes', 'tarangplus:playlist', 'tarangplus:video', 'Tass', 'TBS', 'TBSJPEpisode', 'TBSJPPlaylist', 'TBSJPProgram', 'Teachable', 'TeachableCourse', 'teachertube', 'teachertube:user:collection', 'TeachingChannel', 'Teamcoco', 'TeamTreeHouse', 'techtv.mit.edu', 'TedEmbed', 'TedPlaylist', 'TedSeries', 'TedTalk', 'Tele13', 'Tele5', 'TeleBruxelles', 'TelecaribePlay', 'Telecinco', 'Telegraaf', 'telegram:embed', 'TeleMB', 'Telemundo', 'TeleQuebec', 'TeleQuebecEmission', 'TeleQuebecLive', 'TeleQuebecSquat', 'TeleQuebecVideo', 'TeleTask', 'Telewebion', 'Tempo', 'TennisTV', 'TF1', 'TFO', 'theatercomplextown:ppv', 'theatercomplextown:vod', 'TheChosen', 'TheChosenGroup', 'TheGuardianPodcast', 'TheGuardianPodcastPlaylist', 'TheHighWire', 'TheHoleTv', 'TheIntercept', 'ThePlatform', 'ThePlatformFeed', 'TheStar', 'TheSun', 'TheWeatherChannel', 'ThisAmericanLife', 'ThisOldHouse', 'ThisVid', 'ThisVidMember', 'ThisVidPlaylist', 'ThreeSpeak', 'ThreeSpeakUser', 'TikTok', 'tiktok:collection', 'tiktok:effect', 'tiktok:live', 'tiktok:sound', 'tiktok:tag', 'tiktok:user', 'TLC', 'TMZ', 'TNAFlix', 'TNAFlixNetworkEmbed', 'toggle', 'toggo', 'tokfm:audition', 'tokfm:podcast', 'ToonGoggles', 'tou.tv', 'toutiao', 'Toypics', 'ToypicsUser', 'TrailerAddict', 'TravelChannel', 'Triller', 'TrillerShort', 'TrillerUser', 'Trovo', 'TrovoChannelClip', 'TrovoChannelVod', 'TrovoVod', 'TrtCocukVideo', 'TrtWorld', 'TrueID', 'TruNews', 'Truth', 'ttinglive', 'Tube8', 'TubeTuGraz', 'TubeTuGrazSeries', 'tubitv', 'tubitv:series', 'Tumblr', 'tunein:embed', 'tunein:podcast', 'tunein:podcast:program', 'tunein:station', 'tv.dfb.de', 'TV2', 'TV2Article', 'TV2DK', 'TV2DKBornholmPlay', 'tv2play.hu', 'tv2playseries.hu', 'TV4', 'TV5MONDE', 'tv5unis', 'tv5unis:video', 'tv8.it', 'tv8.it:live', 'tv8.it:playlist', 'TVANouvelles', 'TVANouvellesArticle', 'tvaplus', 'TVC', 'TVCArticle', 'TVer', 'tver:olympic', 'tvigle', 'TVIPlayer', 'TVN24', 'tvnoe', 'TVO', 'tvopengr:embed', 'tvopengr:watch', 'tvp', 'tvp:embed', 'tvp:stream', 'tvp:vod', 'tvp:vod:series', 'TVPlayer', 'TVPlayHome', 'tvw', 'tvw:news', 'tvw:tvchannels', 'Tweakers', 'TwitCasting', 'TwitCastingLive', 'TwitCastingUser', 'twitch:clips', 'twitch:collection', 'twitch:stream', 'twitch:videos', 'twitch:videos:clips', 'twitch:videos:collections', 'twitch:vod', 'twitter', 'twitter:amplify', 'twitter:broadcast', 'twitter:card', 'twitter:shortener', 'twitter:spaces', 'Txxx', 'udemy', 'udemy:course', 'UDNEmbed', 'UFCArabia', 'UFCTV', 'ukcolumn', 'UKTVPlay', 'UlizaPlayer', 'UlizaPortal', 'umg:de', 'Unistra', 'UnitedNationsWebTv', 'Unity', 'uol.com.br', 'uplynk', 'uplynk:preplay', 'Urort', 'URPlay', 'USANetwork', 'USAToday', 'ustream', 'ustream:channel', 'ustudio', 'ustudio:embed', 'Varzesh3', 'Vbox7', 'Veo', 'Vevo', 'VevoPlaylist', 'VGTV', 'vh1.com', 'vhx:embed', 'vice', 'vice:article', 'vice:show', 'Viddler', 'Videa', 'video.arnes.si', 'video.google:search', 'video.sky.it', 'video.sky.it:live', 'VideoDetective', 'videofy.me', 'VideoKen', 'VideoKenCategory', 'VideoKenPlayer', 'VideoKenPlaylist', 'VideoKenTopic', 'videomore', 'videomore:season', 'videomore:video', 'VideoPress', 'Vidflex', 'Vidio', 'VidioLive', 'VidioPremier', 'VidLii', 'Vidly', 'vids.io', 'Vidyard', 'viewlift', 'viewlift:embed', 'Viidea', 'vimeo', 'vimeo:album', 'vimeo:channel', 'vimeo:event', 'vimeo:group', 'vimeo:likes', 'vimeo:ondemand', 'vimeo:pro', 'vimeo:review', 'vimeo:user', 'vimeo:watchlater', 'Vimm:recording', 'Vimm:stream', 'ViMP', 'ViMP:Playlist', 'Viously', 'Viqeo', 'Visir', 'Viu', 'viu:ott', 'viu:playlist', 'ViuOTTIndonesia', 'vk', 'vk:uservideos', 'vk:wallpost', 'VKPlay', 'VKPlayLive', 'vm.tiktok', 'Vocaroo', 'VODPl', 'VODPlatform', 'voicy', 'voicy:channel', 'volejtv:category', 'volejtv:club', 'volejtv:match', 'VoxMedia', 'VoxMediaVolume', 'vpro', 'vqq:series', 'vqq:video', 'vrsquare', 'vrsquare:channel', 'vrsquare:search', 'vrsquare:section', 'VRT', 'vrtmax', 'VTM', 'VTV', 'VTVGo', 'VTXTV', 'VTXTVLive', 'VTXTVRecordings', 'VuClip', 'VVVVID', 'VVVVIDShow', 'Walla', 'WalyTV', 'WalyTVLive', 'WalyTVRecordings', 'washingtonpost', 'washingtonpost:article', 'wat.tv', 'WatchESPN', 'WDR', 'wdr:mobile', 'WDRElefant', 'WDRPage', 'web.archive:youtube', 'Webcamerapl', 'Webcaster', 'WebcasterFeed', 'WebOfStories', 'WebOfStoriesPlaylist', 'Weibo', 'WeiboUser', 'WeiboVideo', 'WeiqiTV', 'wetv:episode', 'WeTvSeries', 'Weverse', 'WeverseLive', 'WeverseLiveTab', 'WeverseMedia', 'WeverseMediaTab', 'WeverseMoment', 'WeVidi', 'Weyyak', 'whowatch', 'Whyp', 'wikimedia.org', 'Wimbledon', 'WimTV', 'WinSportsVideo', 'Wistia', 'WistiaChannel', 'WistiaPlaylist', 'wnl', 'wordpress:mb.miniAudioPlayer', 'wordpress:playlist', 'WorldStarHipHop', 'wppilot', 'wppilot:channels', 'WrestleUniversePPV', 'WrestleUniverseVOD', 'WSJ', 'WSJArticle', 'WWE', 'wyborcza:video', 'WyborczaPodcast', 'wykop:dig', 'wykop:dig:comment', 'wykop:post', 'wykop:post:comment', 'XboxClips', 'XHamster', 'XHamsterEmbed', 'XHamsterUser', 'XiaoHongShu', 'ximalaya', 'ximalaya:album', 'Xinpianchang', 'XMinus', 'XNXX', 'Xstream', 'XVideos', 'xvideos:quickies', 'XXXYMovies', 'yahoo', 'yahoo:japannews', 'yahoo:search', 'YandexDisk', 'yandexmusic:album', 'yandexmusic:artist:albums', 'yandexmusic:artist:tracks', 'yandexmusic:playlist', 'yandexmusic:track', 'YandexVideo', 'YandexVideoPreview', 'YapFiles', 'Yappy', 'YappyProfile', 'yfanefa', 'YleAreena', 'YouJizz', 'youku', 'youku:show', 'YouNowChannel', 'YouNowLive', 'YouNowMoment', 'YouPorn', 'YouPornCategory', 'YouPornChannel', 'YouPornCollection', 'YouPornStar', 'YouPornTag', 'YouPornVideos', 'youtube', 'youtube:clip', 'youtube:favorites', 'youtube:history', 'youtube:music:search_url', 'youtube:notif', 'youtube:playlist', 'youtube:recommended', 'youtube:search', 'youtube:search_url', 'youtube:shorts:pivot:audio', 'youtube:subscriptions', 'youtube:tab', 'youtube:user', 'youtube:watchlater', 'YoutubeLivestreamEmbed', 'YoutubeYtBe', 'Zaiko', 'ZaikoETicket', 'Zapiks', 'Zattoo', 'ZattooLive', 'ZattooMovies', 'ZattooRecordings', 'zdf', 'zdf:channel', 'Zee5', 'zee5:series', 'ZeeNews', 'ZenPorn', 'ZetlandDKArticle', 'Zhihu', 'zingmp3', 'zingmp3:album', 'zingmp3:chart-home', 'zingmp3:chart-music-video', 'zingmp3:hub', 'zingmp3:liveradio', 'zingmp3:podcast', 'zingmp3:podcast-episode', 'zingmp3:user', 'zingmp3:week-chart', 'zoom', 'Zype', 'generic']
+
+        this.topSites = [
+          "YouTube", "Instagram", "TikTok", "Facebook", "Twitter", "Reddit", "Vimeo", "Twitch",
+          "SoundCloud", "Dailymotion", "Pinterest", "LinkedIn", "Bilibili", "JioSaavn", "Snapchat"
+        ];
+
+        this.innerHTML = `
+          <section class="mt-16 mb-8 w-full max-w-5xl" aria-label="Supported sites">
+            <h2 class="text-lg font-semibold text-gray-300 mb-3">Jungle Supported Sites</h2>
+
+          <p class="text-sm text-gray-400 mb-4">
+            Supports <strong class="text-white">1800+ websites</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> to check if your desired site is available.
+          </p>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs text-white-600">
+              ${this.topSites.map(site => `<span class="glass-card px-3 py-1 rounded-full">${site}</span>`).join('')}
+              <button id="more-sites-btn" class="glass-card px-4 py-1.5 rounded-full text-white hover:text-gray-300 transition-colors border-gray-400 font-medium cursor-pointer">
+                + More Sites
+              </button>
+            </div>
+          </section>
+
+          <div id="sites-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+            <div class="glass-panel w-full max-w-3xl h-[80vh] flex flex-col p-6 rounded-2xl relative border border-white/10 bg-zinc-950/95 shadow-2xl">
+
+              <div class="flex justify-between items-start mb-2 shrink-0">
+                <h3 class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supportive sites</h3>
+                  <button id="close-modal-btn" class="text-zinc-500 hover:text-zinc-300 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer" aria-label="Close sites list modal">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="flex justify-end mb-4 border-b border-white/10 pb-5 shrink-0">
+                <div class="relative w-full sm:w-72">
+                  <input type="text" id="site-search-input" placeholder="Search for a supported site..."
+                    class="glass-input w-full p-2.5 pl-9 rounded-lg text-sm text-white outline-none">
+                  <svg class="w-4 h-4 text-gray-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                <div id="modal-sites-grid" class="flex flex-wrap gap-2.5 text-xs text-gray-300">
+                  </div>
+                <div id="not-found-message" class="hidden text-center text-sm text-zinc-400 mt-10 p-6 glass-card rounded-xl">
+                  <svg class="w-8 h-8 mx-auto mb-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  No results found. We currently do not provide support for the requested service.
+                </div>
+              </div>
+
+            </div>
+          </div>
+        `;
+        this.modal = this.querySelector('#sites-modal');
+        this.moreBtn = this.querySelector('#more-sites-btn');
+        this.closeBtn = this.querySelector('#close-modal-btn');
+        this.searchInput = this.querySelector('#site-search-input');
+        this.sitesGrid = this.querySelector('#modal-sites-grid');
+        this.notFoundMsg = this.querySelector('#not-found-message');
+
+        this.moreBtn.addEventListener('click', () => this.openModal());
+        this.closeBtn.addEventListener('click', () => this.closeModal());
+        this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+
+        this.modal.addEventListener('click', (e) => {
+          if (e.target === this.modal) this.closeModal();
+        });
+
+        this.renderSites(this.sites);
+      }
+
+      openModal() {
+        this.modal.classList.remove('hidden');
+        this.modal.classList.add('flex');
+        this.searchInput.value = '';
+        this.renderSites(this.sites);
+      }
+
+      closeModal() {
+        this.modal.classList.add('hidden');
+        this.modal.classList.remove('flex');
+      }
+
+      handleSearch(query) {
+        const lowerQuery = query.toLowerCase().trim();
+        const filteredSites = this.sites.filter(site => site.toLowerCase().includes(lowerQuery));
+        this.renderSites(filteredSites);
+      }
+
+      renderSites(sitesToRender) {
+        if (sitesToRender.length === 0) {
+          this.sitesGrid.innerHTML = '';
+          this.notFoundMsg.classList.remove('hidden');
+        } else {
+          this.notFoundMsg.classList.add('hidden');
+          this.sitesGrid.innerHTML = sitesToRender.map(site =>
+            `<span class="glass-card px-3 py-1.5 rounded-md border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">${site}</span>`
+          ).join('');
+        }
+      }
+    }
+
+    customElements.define('supported-sites', SupportedSites);
   </script>
 </body>
 
