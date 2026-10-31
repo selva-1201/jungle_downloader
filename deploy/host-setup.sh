@@ -52,6 +52,13 @@ echo "==========================================================================
 # ------------------------------------------------------------------------------
 log_info "Updating apt package index and installing base security tools..."
 export DEBIAN_FRONTEND=noninteractive
+
+# Preseed iptables-persistent to install non-interactively without prompt hang
+if command -v debconf-set-selections >/dev/null 2>&1; then
+    echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
+    echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
+fi
+
 apt-get update -y
 apt-get install -y --no-install-recommends \
     ufw \
@@ -119,8 +126,28 @@ systemctl enable --now unattended-upgrades
 log_success "Unattended security upgrades active."
 
 # ------------------------------------------------------------------------------
-# 5. Fail2ban Configuration for SSH
+# 5. SSH Hardening & Fail2ban
 # ------------------------------------------------------------------------------
+log_info "Configuring SSH hardening drop-in (/etc/ssh/sshd_config.d/99-jungle.conf)..."
+mkdir -p /etc/ssh/sshd_config.d
+cat > /etc/ssh/sshd_config.d/99-jungle.conf << 'EOF'
+PasswordAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+EOF
+
+if command -v sshd >/dev/null 2>&1; then
+    log_info "Validating sshd configuration (sshd -t)..."
+    if sshd -t; then
+        systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+        log_success "SSH hardening configuration validated and applied."
+    else
+        log_error "sshd -t validation failed! Reverting 99-jungle.conf to prevent SSH lockout."
+        rm -f /etc/ssh/sshd_config.d/99-jungle.conf
+        exit 1
+    fi
+fi
+
 log_info "Configuring Fail2ban jail for SSH protection..."
 mkdir -p /etc/fail2ban/jail.d
 cat > /etc/fail2ban/jail.d/sshd.local << 'EOF'
@@ -173,26 +200,15 @@ ufw --force enable
 log_success "UFW firewall active and configured."
 
 # ------------------------------------------------------------------------------
-# 8. Oracle IMDS Protection (Drop Container Egress to 169.254.169.254)
+# 8. Container Egress Lockdown (RFC 1918, Link-Local & Oracle IMDS Protection)
 # ------------------------------------------------------------------------------
-# Ensures Docker containers cannot access Oracle Cloud's Instance Metadata Service.
-log_info "Configuring Oracle Cloud IMDS egress drop in iptables DOCKER-USER chain..."
-IMDS_IP="169.254.169.254"
-
-# Ensure DOCKER-USER chain exists (Docker creates it, but we prepare it in case Docker isn't running yet)
-iptables -N DOCKER-USER 2>/dev/null || true
-
-if iptables -C DOCKER-USER -d "${IMDS_IP}" -j DROP 2>/dev/null; then
-    log_info "Rule already present in DOCKER-USER chain."
+log_info "Executing container egress lockdown via deploy/block_internal_egress.sh..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/block_internal_egress.sh" ]]; then
+    bash "${SCRIPT_DIR}/block_internal_egress.sh"
+    log_success "Container egress lockdown rules configured and persisted."
 else
-    iptables -I DOCKER-USER -d "${IMDS_IP}" -j DROP
-    log_success "Added DROP rule for Oracle IMDS (${IMDS_IP}) to DOCKER-USER chain."
-fi
-
-# Persist iptables rules across reboots
-if command -v netfilter-persistent >/dev/null 2>&1; then
-    netfilter-persistent save >/dev/null 2>&1 || true
-    log_success "iptables rules persisted via netfilter-persistent."
+    log_warn "deploy/block_internal_egress.sh not found; skipping."
 fi
 
 # ------------------------------------------------------------------------------
@@ -224,9 +240,12 @@ EOF
 fi
 
 if systemctl is-active --quiet docker; then
-    systemctl reload docker 2>/dev/null || true
+    log_info "Restarting Docker daemon to apply daemon.json log options..."
+    systemctl restart docker 2>/dev/null || true
+    log_success "Docker daemon restarted with updated log limits."
+else
+    log_info "Docker daemon is not currently active. New log limits will apply upon startup."
 fi
-log_success "Docker daemon log limits set to 10m max-size, 3 max-file."
 
 # ------------------------------------------------------------------------------
 # 10. Kernel & Network Tuning

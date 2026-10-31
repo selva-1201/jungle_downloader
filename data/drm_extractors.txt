@@ -1,16 +1,3 @@
-# DRM-only streaming services to exclude from supported sites
-netflix
-spotify
+# Real DRM-only/cable paywall extractors present in yt-dlp to exclude from supported sites
 disney
-disneyplus
-hulu
-appletv
-amazonprime
-primevideo
-hbomax
-max
-peacock
-paramountplus
-crunchyroll
-deezer
-
+cinemax

@@ -21,8 +21,8 @@ __pycache__/
 *.pyd
 
 # Testing & Artifacts
-.pytest_cache/
 tests/
+.pytest_cache/
 .coverage
 htmlcov/
 
@@ -32,7 +32,9 @@ PLAN.md
 DEPLOY.md
 RUNBOOK.md
 
-# Local build binaries & scripts
+# Local build binaries
 bin/
 
-
+# Explicit inclusions (data volume & prebuilt assets)
+!data/
+!static/css/app.css

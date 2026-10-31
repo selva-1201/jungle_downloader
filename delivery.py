@@ -1,11 +1,17 @@
 import datetime
 import logging
+import re
 import time
 from typing import Any, Dict, Optional, Tuple
 from gevent.lock import BoundedSemaphore
 from config import config
 
 logger = logging.getLogger(__name__)
+
+BOT_PATTERN = re.compile(
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    re.IGNORECASE,
+)
 
 # Dedicated semaphore for YouTube extractions to isolate YouTube bottlenecks
 youtube_extract_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_YOUTUBE)
@@ -123,22 +129,13 @@ class YouTubeCircuitBreaker:
         """
         Called on extraction error.
         Increments counter and trips if bot detection or 429 occurs.
+        Uses word-boundary regex so words like 'both' or 'robot' do not trip.
         """
-        err_lower = (error_message or "").lower()
-        bot_signals = [
-            "sign in to confirm you're not a bot",
-            "bot",
-            "captcha",
-            "429",
-            "too many requests",
-            "blocking us",
-            "automated queries"
-        ]
-
-        if any(sig in err_lower for sig in bot_signals):
+        err_msg = error_message or ""
+        if BOT_PATTERN.search(err_msg):
             self.consecutive_failures += 1
             logger.warning(
-                f"YouTube bot block detected ({self.consecutive_failures}/{self.failure_threshold}): {error_message[:60]}"
+                f"YouTube bot block detected ({self.consecutive_failures}/{self.failure_threshold}): {err_msg[:60]}"
             )
             if self.consecutive_failures >= self.failure_threshold or self.state == self.STATE_HALF_OPEN:
                 self.state = self.STATE_OPEN
@@ -178,6 +175,15 @@ class ProxyRouter:
             self.current_date = today
             self.proxied_bytes_today = 0
 
+    def is_budget_exceeded(self) -> bool:
+        """Checks whether the daily proxied byte budget has been exhausted."""
+        self._check_and_rollover_day()
+        budget_gb = config.PROXIED_DAILY_BYTE_BUDGET_GB
+        if budget_gb > 0:
+            max_bytes = budget_gb * 1024 * 1024 * 1024
+            return self.proxied_bytes_today >= max_bytes
+        return False
+
     def get_proxy_for_extractor(self, extractor_name: str) -> Optional[str]:
         """
         Resolves proxy URL for a specific extractor based on PROXY_RULES and daily budget.
@@ -185,14 +191,11 @@ class ProxyRouter:
         self._check_and_rollover_day()
 
         # Check daily budget cap if set
-        budget_gb = config.PROXIED_DAILY_BYTE_BUDGET_GB
-        if budget_gb > 0:
-            max_bytes = budget_gb * 1024 * 1024 * 1024
-            if self.proxied_bytes_today >= max_bytes:
-                logger.warning(
-                    f"Proxied daily byte budget of {budget_gb} GB exceeded ({self.proxied_bytes_today} bytes). Routing direct."
-                )
-                return None
+        if self.is_budget_exceeded():
+            logger.warning(
+                f"Proxied daily byte budget of {config.PROXIED_DAILY_BYTE_BUDGET_GB} GB exceeded ({self.proxied_bytes_today} bytes). Routing direct."
+            )
+            return None
 
         # Per-extractor rules take highest precedence
         rules = config.PROXY_RULES

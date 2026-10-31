@@ -12,7 +12,8 @@
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
   <meta name="robots" content="index, follow">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="canonical" href="{{ site_url }}/terms">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -23,6 +24,7 @@
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
     }
+    :focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 
     .glass-panel {
       background: rgba(25, 25, 25, 0.4);
@@ -46,70 +48,71 @@
         <h1 class="text-2xl font-bold tracking-tight">Jungle Terms of Service</h1>
       </a>
     </div>
-    <p class="text-gray-500 mt-1 text-sm tracking-wide">Last Updated: May 2026</p>
+    <p class="text-gray-400 mt-1 text-sm tracking-wide">Last Updated: {{ legal_last_updated }}</p>
   </header>
 
   <main
     class="w-full max-w-3xl glass-panel p-8 rounded-2xl shadow-2xl flex flex-col gap-6 text-sm text-gray-400 leading-relaxed">
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">1. Welcome to Jungle Media Downloader!</h2>
-      <p>Jungle Media Downloader is an open-source utility created with care for the community. To ensure a safe, fair,
-        and reliable
-        experience for everyone browsing our platform, we kindly invite you to follow these simple community guidelines
-        while using our web interface.</p>
+      <h2 class="text-base font-semibold text-white mb-2">1. Acceptance of Terms</h2>
+      <p>Jungle Media Downloader is a free web utility designed to simplify accessing and retrieving public media streams for personal, offline viewing. By accessing or using our website, you agree to comply with and be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">2. About Our Service</h2>
-      <p>Jungle Media Downloader functions purely as a free web interface for the independent, open-source library known
-        as <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" class="text-white underline">yt-dlp</a>. Our
-        servers
-        help you process link extraction scripts dynamically through your web browser. We do not host, store, archive,
-        or re-transmit any media files on our infrastructure. All tasks happen temporarily during your live active
-        session.</p>
+      <h2 class="text-base font-semibold text-white mb-2">2. Nature of Service & Transient Processing</h2>
+      <p>Jungle Media Downloader functions purely as a web interface powered by the independent open-source library <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="text-white underline">yt-dlp</a>. Our servers assist with resolving metadata and proxying media streams dynamically during your active browser session. We do not host, store, archive, or re-transmit any media files permanently on our servers. Once your download or preview completes, transient cached tokens and sessions expire automatically.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">3. Respecting Content Creators</h2>
-      <p>We deeply respect intellectual property and the hard work of content creators everywhere. Jungle Media
-        Downloader does not claim
-        any ownership, licensing rights, or copyright over the media items processed using this platform. All media
-        ownership remains entirely with the original creators and the respective hosting networks.</p>
+      <h2 class="text-base font-semibold text-white mb-2">3. Respecting Intellectual Property & Copyright</h2>
+      <p>We deeply respect intellectual property rights and require all users to respect copyright laws. Jungle Media Downloader does not claim any ownership, copyright, or licensing rights over any media processed through this platform. All rights remain entirely with the original creators and respective hosting networks. You must ensure you have the appropriate rights, licenses, or fair-use permissions before downloading any media.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">4. Responsible Downloading</h2>
-      <p>We want to keep this community tool safe and running smoothly. When utilizing our interface, we ask you to
-        kindly ensure that:</p>
+      <h2 class="text-base font-semibold text-white mb-2">4. Responsible & Fair Use</h2>
+      <p>To ensure fair access and prevent abuse, we enforce automated rate limits per IP address and concurrency caps. By using our interface, you agree that:</p>
       <ul class="list-disc pl-5 mt-2 flex flex-col gap-1">
-        <li>The media file you handle is strictly meant for non-commercial, private, or personal educational utility.
-        </li>
-        <li>You respect the rules, permissions, or public domain status of the content you are interacting with.</li>
-        <li>Your use matches the core terms and community expectations enforced by the respective host networks (such as
-          YouTube, Instagram, or TikTok).</li>
+        <li>The media you retrieve is strictly for personal, non-commercial, or educational use.</li>
+        <li>You will not use automated scripts, scrapers, or bot nets to overwhelm the service.</li>
+        <li>You will comply with applicable local, national, and international laws, as well as the terms of the third-party platforms from which content is retrieved.</li>
+        <li>You are of legal age in your jurisdiction to agree to these terms.</li>
       </ul>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">5. Availability & Continuity</h2>
-      <p>We do our very best to maintain this open-source tool for you. However, because source hosting sites change
-        their systems constantly, extraction compatibility might occasionally shift or drop. Jungle Media Downloader
-        provides this
-        utility interface on a friendly, flexible framework, and cannot assume liability for temporary platform changes
-        or user actions.</p>
+      <h2 class="text-base font-semibold text-white mb-2">5. Security & Verification</h2>
+      <p>We use Cloudflare and Cloudflare Turnstile to safeguard our infrastructure from denial-of-service attacks, automated abuse, and credential stuffing. During periods of elevated traffic or suspicious patterns, you may be presented with a lightweight security verification challenge.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">6. Keeping Things Balanced</h2>
-      <p>To preserve server stability or align with global web standards, we may adjust or optimize parts of this public
-        interface from time to time. Thank you for being a wonderful part of our open-source user community!</p>
+      <h2 class="text-base font-semibold text-white mb-2">6. Advertising & Sustainability</h2>
+      {% if ads_enabled %}
+      <p>To keep this service free and cover server bandwidth costs, we partner with vetted third-party advertising networks. These networks may use anonymous cookies and identifiers to serve contextually relevant advertisements. You can manage or disable cookie preferences directly in your browser settings. See our Privacy Policy for full details.</p>
+      {% else %}
+      <p>This service is currently operated without commercial display advertising.</p>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">7. Disclaimer of Warranties & Limitation of Liability</h2>
+      <p>Jungle Media Downloader is provided on an "as is" and "as available" basis without warranties of any kind, whether express or implied. Third-party media platforms frequently update their architectures, which may temporarily or permanently disrupt extraction capabilities. Jungle Media Downloader assumes no liability for service interruptions, errors, or any damages resulting from your use of the service.</p>
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">8. Copyright Complaints & DMCA</h2>
+      <p>We take copyright infringement seriously. If you are a copyright owner or authorized representative and believe that any functionality on Jungle Media Downloader facilitates unauthorized access to your copyrighted material, please send a written notification to our designated agent at <a href="mailto:{{ dmca_email }}" class="text-white underline">{{ dmca_email }}</a> with identification of the work and relevant details.</p>
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">9. Contact Information</h2>
+      <p>For questions or feedback regarding these Terms of Service, please contact us at <a href="mailto:{{ contact_email }}" class="text-white underline">{{ contact_email }}</a>.</p>
     </section>
 
   </main>
 
-  <footer class="w-full max-w-3xl text-center text-xs text-gray-600 mt-8">
-    <p>© 2026 Jungle Media Downloader. Open-source community utility framework.</p>
+  <footer class="w-full max-w-3xl text-center text-xs text-gray-500 mt-8">
+    <p>© 2026 Jungle Media Downloader. {% if public_repo_url %}<a href="{{ public_repo_url }}" target="_blank" rel="noopener" class="underline hover:text-white">Open Source</a> · {% endif %}Respect copyright laws.</p>
   </footer>
 
 </body>

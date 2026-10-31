@@ -15,6 +15,18 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 REQUIREMENTS_FILE="${PROJECT_ROOT}/requirements.txt"
 BACKUP_FILE="${PROJECT_ROOT}/requirements.txt.bak"
 
+# Safely extract TELEGRAM variables from .env if present (without echoing or executing arbitrary commands)
+if [[ -f "${PROJECT_ROOT}/.env" ]]; then
+    TELEGRAM_BOT_TOKEN_FILE=$(grep -E '^[[:space:]]*TELEGRAM_BOT_TOKEN=' "${PROJECT_ROOT}/.env" | head -n 1 | cut -d '=' -f 2- | tr -d '"\r' || true)
+    TELEGRAM_CHAT_ID_FILE=$(grep -E '^[[:space:]]*TELEGRAM_CHAT_ID=' "${PROJECT_ROOT}/.env" | head -n 1 | cut -d '=' -f 2- | tr -d '"\r' || true)
+    if [[ -n "${TELEGRAM_BOT_TOKEN_FILE}" ]]; then
+        TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN_FILE}"
+    fi
+    if [[ -n "${TELEGRAM_CHAT_ID_FILE}" ]]; then
+        TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID_FILE}"
+    fi
+fi
+
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
@@ -60,9 +72,30 @@ cp "${REQUIREMENTS_FILE}" "${BACKUP_FILE}"
 # Update requirements.txt to candidate version
 sed -i "s/^yt-dlp==.*/yt-dlp==${LATEST_VERSION}/" "${REQUIREMENTS_FILE}"
 
-# 4. Build candidate container image
+# 4. Build candidate test stage and run pytest
+TEST_TAG="jungle-downloader:candidate-${LATEST_VERSION}-test"
+echo "[INFO] Building candidate test stage: ${TEST_TAG}..."
+
+if ! docker build --target test -t "${TEST_TAG}" -f Dockerfile . ; then
+    echo "[ERROR] Docker test stage build failed for yt-dlp ${LATEST_VERSION}! Rolling back."
+    mv "${BACKUP_FILE}" "${REQUIREMENTS_FILE}"
+    send_alert "Jungle Downloader: Docker test stage build failed for candidate yt-dlp ${LATEST_VERSION}. Rolled back."
+    exit 1
+fi
+
+echo "[INFO] Running pytest test suite inside candidate test container..."
+if ! docker run --rm "${TEST_TAG}" ; then
+    echo "[ERROR] Candidate container failed pytest! Rolling back."
+    mv "${BACKUP_FILE}" "${REQUIREMENTS_FILE}"
+    docker rmi "${TEST_TAG}" 2>/dev/null || true
+    send_alert "Jungle Downloader: Candidate container with yt-dlp ${LATEST_VERSION} failed pytest. Rolled back."
+    exit 1
+fi
+docker rmi "${TEST_TAG}" 2>/dev/null || true
+
+# 5. Build candidate runtime image
 CANDIDATE_TAG="jungle-downloader:candidate-${LATEST_VERSION}"
-echo "[INFO] Building candidate image: ${CANDIDATE_TAG}..."
+echo "[INFO] Building candidate runtime image: ${CANDIDATE_TAG}..."
 
 if ! docker build -t "${CANDIDATE_TAG}" -f Dockerfile . ; then
     echo "[ERROR] Docker build failed for yt-dlp ${LATEST_VERSION}! Rolling back."
@@ -71,18 +104,8 @@ if ! docker build -t "${CANDIDATE_TAG}" -f Dockerfile . ; then
     exit 1
 fi
 
-# 5. Run automated test suite inside the candidate container
-echo "[INFO] Running pytest test suite inside candidate container..."
-if ! docker run --rm "${CANDIDATE_TAG}" python3 -m pytest tests/ ; then
-    echo "[ERROR] Candidate container failed pytest! Rolling back."
-    mv "${BACKUP_FILE}" "${REQUIREMENTS_FILE}"
-    docker rmi "${CANDIDATE_TAG}" 2>/dev/null || true
-    send_alert "Jungle Downloader: Candidate container with yt-dlp ${LATEST_VERSION} failed pytest. Rolled back."
-    exit 1
-fi
-
-# 6. Run live smoke test inside candidate container
-echo "[INFO] Running live smoke test inside candidate container..."
+# 6. Run live smoke test inside candidate runtime container
+echo "[INFO] Running live smoke test inside candidate runtime container..."
 if ! docker run --rm "${CANDIDATE_TAG}" python3 scripts/smoke_test.py ; then
     echo "[ERROR] Candidate container failed smoke test! Rolling back."
     mv "${BACKUP_FILE}" "${REQUIREMENTS_FILE}"

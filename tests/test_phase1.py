@@ -1,3 +1,4 @@
+import socket
 import time
 import pytest
 import yt_dlp
@@ -47,6 +48,50 @@ def test_preview_and_stream_session_expired_410(client):
     assert data_stream["code"] == "SESSION_EXPIRED"
 
 
+def test_stream_and_preview_raw_url_returns_410_no_ytdlp(client, mocker):
+    mock_extract = mocker.patch.object(yt_dlp.YoutubeDL, "extract_info")
+
+    # Raw url query param on stream returns 410 and never calls yt-dlp
+    resp_stream = client.get("/api/stream?url=https://www.pornhub.com/x&format_id=best")
+    assert resp_stream.status_code == 410
+    assert resp_stream.get_json()["code"] == "SESSION_EXPIRED"
+    mock_extract.assert_not_called()
+
+    # Raw url query param on preview returns 410 and never calls yt-dlp
+    resp_prev = client.get("/api/preview?url=https://www.pornhub.com/x&format_id=best")
+    assert resp_prev.status_code == 410
+    assert resp_prev.get_json()["code"] == "SESSION_EXPIRED"
+    mock_extract.assert_not_called()
+
+
+def test_preview_allows_over_ten_requests_per_minute(client, mocker):
+    fake_info = {
+        "id": "prev123",
+        "title": "Preview Video",
+        "formats": [{
+            "format_id": "18",
+            "vcodec": "avc1",
+            "acodec": "mp4a",
+            "url": "https://example.com/video.mp4",
+            "protocol": "https"
+        }]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mock_resp = mocker.MagicMock(
+        headers={},
+        is_redirect=False,
+        status_code=200,
+        iter_content=lambda chunk_size: iter([b"fake-bytes"])
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp)
+
+    # Send 15 requests in a row - none should be rate limited (rate limit is 120/min)
+    for _ in range(15):
+        resp = client.get(f"/api/preview?token={token}&format_id=18")
+        assert resp.status_code != 429
+        assert resp.status_code == 200
+
+
 def test_api_download_generates_token_and_caches_info(client, mocker):
     mock_info = {
         "id": "vid123",
@@ -73,6 +118,7 @@ def test_api_download_generates_token_and_caches_info(client, mocker):
     data = resp.get_json()
     assert data["success"] is True
     assert "token" in data
+    assert data["duration"] == 120
     assert data["title"] == "Sample Jungle Clip"
 
     # Verify cached under the token
@@ -105,6 +151,23 @@ def test_ffmpeg_semaphore_saturation_returns_503(client, mocker):
     mock_sem = mocker.patch("app.ffmpeg_semaphore")
     mock_sem.acquire.return_value = False
 
+    resp = client.get(f"/api/stream?token={token}&format_id=18&type=audio")
+    assert resp.status_code == 503
+    assert resp.headers.get("Retry-After") == "30"
+    data = resp.get_json()
+    assert "Server busy" in data["error"]
+
+
+def test_proxy_semaphore_saturation_returns_503(client, mocker):
+    fake_info = {
+        "id": "stream123",
+        "title": "Stream Video",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/video.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mock_sem = mocker.patch("app.proxy_semaphore")
+    mock_sem.acquire.return_value = False
+
     resp = client.get(f"/api/stream?token={token}&format_id=18")
     assert resp.status_code == 503
     assert resp.headers.get("Retry-After") == "30"
@@ -128,6 +191,118 @@ def test_video_too_long_rejected(client, mocker):
     assert "too long" in data["error"].lower()
 
 
+def test_live_stream_rejected(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "live1",
+        "title": "Live Broadcast",
+        "is_live": True,
+        "formats": []
+    })
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=live1"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "Live streams" in data["error"]
+
+    # Also test upcoming broadcast
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "live2",
+        "title": "Upcoming Stream",
+        "live_status": "is_upcoming",
+        "formats": []
+    })
+    resp2 = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=live2"})
+    assert resp2.status_code == 400
+    assert "Live streams" in resp2.get_json()["error"]
+
+
+def test_oversized_filesize_dropped_from_options(client, mocker):
+    max_b = config.MAX_FILESIZE_MB * 1024 * 1024
+    mocker.patch("socket.getaddrinfo", return_value=[
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
+    ])
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "size123",
+        "title": "Size Test",
+        "duration": 60,
+        "formats": [
+            {
+                "format_id": "ok_fmt",
+                "vcodec": "avc1",
+                "acodec": "mp4a",
+                "height": 720,
+                "filesize": 50 * 1024 * 1024,
+                "url": "https://example.com/ok.mp4",
+                "protocol": "https"
+            },
+            {
+                "format_id": "huge_fmt",
+                "vcodec": "avc1",
+                "acodec": "mp4a",
+                "height": 1080,
+                "filesize": max_b + (10 * 1024 * 1024),
+                "url": "https://example.com/huge.mp4",
+                "protocol": "https"
+            }
+        ]
+    })
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=size123"})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    video_fmt_ids = [v["format_id"] for v in data["video_formats"]]
+    assert "ok_fmt" in video_fmt_ids
+    assert "huge_fmt" not in video_fmt_ids
+
+
+def test_generator_aborts_at_byte_cap(mocker):
+    from app import stream_via_direct_url
+    max_b = config.MAX_FILESIZE_MB * 1024 * 1024
+
+    # 1. Content-Length header exceeding cap raises ValueError immediately
+    mock_resp_huge = mocker.MagicMock(
+        headers={"Content-Length": str(max_b + 1000)},
+        close=mocker.MagicMock()
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp_huge)
+    with pytest.raises(ValueError, match="exceeds maximum allowed limit"):
+        stream_via_direct_url({"url": "https://example.com/huge.mp4"}, "video")
+
+    # 2. Generator aborts when yielded bytes exceed cap
+    chunk_1mb = b"x" * (1024 * 1024)
+    # Return more chunks than MAX_FILESIZE_MB
+    chunks = [chunk_1mb] * (config.MAX_FILESIZE_MB + 5)
+    mock_resp_stream = mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter(chunks),
+        close=mocker.MagicMock()
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp_stream)
+    gen, ctype, clen = stream_via_direct_url({"url": "https://example.com/stream.mp4"}, "video")
+    yielded_chunks = list(gen)
+    total_yielded_bytes = sum(len(c) for c in yielded_chunks)
+    assert total_yielded_bytes <= max_b
+
+
+def test_watchdog_kills_hanging_fake_process(mocker):
+    import gevent
+    mock_proc = mocker.MagicMock()
+    mock_proc.poll.return_value = None
+
+    def watchdog(p, timeout_sec):
+        gevent.sleep(timeout_sec)
+        if p.poll() is None:
+            p.kill()
+
+    # Run watchdog with tiny timeout
+    g = gevent.spawn(watchdog, mock_proc, 0.05)
+    gevent.sleep(0.1)
+    assert mock_proc.kill.called
+    assert mock_proc.kill.called
+
+
 # --- 1.3 BOT PROTECTION & TURNSTILE TESTS ---
 def test_turnstile_clearance_token_validation():
     client_ip = "198.51.100.1"
@@ -140,6 +315,72 @@ def test_turnstile_clearance_token_validation():
 def test_turnstile_dev_mode_skips_verification():
     # When TURNSTILE_SECRET is unset, verify_turnstile_response returns True
     assert verify_turnstile_response(None, "127.0.0.1") is True
+
+
+def test_turnstile_missing_secret_key_in_prod_raises(mocker):
+    mocker.patch.object(config, "ENV", "prod")
+    mocker.patch.object(config, "SECRET_KEY", "")
+    mocker.patch.dict("os.environ", {"SECRET_KEY": ""})
+
+    with pytest.raises(ValueError, match="SECRET_KEY environment variable is required"):
+        generate_clearance_token("198.51.100.1")
+
+    with pytest.raises(ValueError, match="SECRET_KEY environment variable is required"):
+        verify_clearance_token("123.sig", "198.51.100.1")
+
+
+def test_turnstile_clearance_cookie_flags(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "TURNSTILE_SECRET", "test-secret")
+    mocker.patch("app.verify_turnstile_response", return_value=True)
+    mocker.patch("app.fetch_fresh_metadata", return_value={"formats": [], "title": "Test"})
+
+    # 1. Dev environment: cookie is HttpOnly, Lax, but NOT Secure
+    mocker.patch.object(config, "ENV", "dev")
+    resp_dev = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp_dev.status_code == 200
+    cookie_header_dev = resp_dev.headers.get("Set-Cookie", "")
+    assert "cf_clearance_token=" in cookie_header_dev
+    assert "HttpOnly" in cookie_header_dev
+    assert "SameSite=Lax" in cookie_header_dev
+    assert "Secure" not in cookie_header_dev
+
+    # 2. Prod environment: cookie MUST have Secure
+    mocker.patch.object(config, "ENV", "prod")
+    mocker.patch.object(config, "SECRET_KEY", "prod-secret-key-123456789")
+    resp_prod = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp_prod.status_code == 200
+    cookie_header_prod = resp_prod.headers.get("Set-Cookie", "")
+    assert "cf_clearance_token=" in cookie_header_prod
+    assert "Secure" in cookie_header_prod
+    assert "HttpOnly" in cookie_header_prod
+
+
+def test_turnstile_template_rendering(client, mocker):
+    # Without turnstile site key
+    mocker.patch.object(config, "TURNSTILE_SITE_KEY", "")
+    resp_empty = client.get("/")
+    assert resp_empty.status_code == 200
+    assert "challenges.cloudflare.com/turnstile" not in resp_empty.text
+    assert "cf-turnstile" not in resp_empty.text
+
+    # With turnstile site key
+    mocker.patch.object(config, "TURNSTILE_SITE_KEY", "1x00000000000000000000AA")
+    resp_key = client.get("/")
+    assert resp_key.status_code == 200
+    assert "challenges.cloudflare.com/turnstile/v0/api.js" in resp_key.text
+    assert "cf-turnstile" in resp_key.text
+    assert "1x00000000000000000000AA" in resp_key.text
+
+
+def test_turnstile_403_bot_challenge_required_path(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "TURNSTILE_SECRET", "test-secret")
+
+    resp = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp.status_code == 403
+    data = resp.get_json()
+    assert data["code"] == "BOT_CHALLENGE_REQUIRED"
 
 
 # --- 1.4 SITES API & ETAG CACHING ---
@@ -240,4 +481,106 @@ def test_rate_limiter_separate_buckets_for_different_x_real_ips(client, mocker):
         environ_base={"REMOTE_ADDR": trusted_proxy_peer}
     )
     assert r_ip1_repeat.status_code == 429
+
+
+# --- P03 TESTS: LEAKS & SEMAPHORES ---
+def test_response_uniterated_closed_releases_semaphore(client, mocker):
+    fake_info = {
+        "id": "rel123",
+        "title": "Release Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    mocker.patch("app.safe_requests_get", return_value=mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter([b"chunk"])
+    ))
+
+    initial_val = app.proxy_semaphore.counter
+    resp = client.get(f"/api/stream?token={token}&format_id=18", buffered=False)
+    assert resp.status_code == 200
+    assert app.proxy_semaphore.counter == initial_val - 1
+
+    resp.close()
+    assert app.proxy_semaphore.counter == initial_val
+
+
+def test_exception_from_requests_releases_permit(client, mocker):
+    fake_info = {
+        "id": "exc123",
+        "title": "Exception Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    import requests
+    mocker.patch("app.safe_requests_get", side_effect=requests.exceptions.ConnectionError("fail"))
+
+    initial_val = app.proxy_semaphore.counter
+    with pytest.raises(requests.exceptions.ConnectionError):
+        client.get(f"/api/stream?token={token}&format_id=18")
+
+    assert app.proxy_semaphore.counter == initial_val
+
+
+def test_five_concurrent_progressive_downloads_succeed_while_ffmpeg_max_is_three(client, mocker):
+    fake_info = {
+        "id": "prog123",
+        "title": "Prog Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    mocker.patch("app.safe_requests_get", return_value=mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter([b"chunk"])
+    ))
+
+    # Exhaust all 3 permits of ffmpeg_semaphore
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.counter == 0
+
+    responses = []
+    try:
+        # All 5 progressive downloads should succeed because they use proxy_semaphore, not ffmpeg
+        for _ in range(5):
+            resp = client.get(f"/api/stream?token={token}&format_id=18")
+            assert resp.status_code == 200
+            responses.append(resp)
+    finally:
+        for r in responses:
+            r.close()
+        app.ffmpeg_semaphore.release()
+        app.ffmpeg_semaphore.release()
+        app.ffmpeg_semaphore.release()
+
+
+def test_killing_client_midstream_terminates_ffmpeg_subprocess(client, mocker):
+    fake_info = {
+        "id": "ffproc123",
+        "title": "FFmpeg Kill Test",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+
+    mock_proc = mocker.MagicMock()
+    mock_proc.stdout.read.side_effect = [b"chunk1", b"chunk2"]
+
+    import gevent.subprocess
+    mocker.patch.object(gevent.subprocess, "Popen", return_value=mock_proc)
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.get(f"/api/stream?token={token}&format_id=18&type=audio")
+    assert resp.status_code == 200
+
+    # Read one chunk then simulate client disconnecting / closing
+    gen = resp.response
+    next(iter(gen))
+    resp.close()
+
+    assert mock_proc.kill.called
+    assert mock_proc.wait.called
 

@@ -24,6 +24,24 @@ def test_sanitize_filename_removes_crlf_and_special_chars():
     assert cleaned.endswith(".mp4")
 
 
+def test_sanitize_filename_length_cap_and_bidi_strip():
+    # Test long filename (over 150 chars base)
+    long_name = "x" * 200 + ".mp4"
+    cleaned_long = sanitize_filename(long_name, ext=".mp4")
+    assert cleaned_long.endswith(".mp4")
+    base_name = cleaned_long[:-4]
+    assert len(base_name) <= 150
+
+    # Test bidi override characters (U+202A-202E, U+2066-2069)
+    bidi_name = "innocent\u202e\u2066test\u2069\u202bpayload.mp4"
+    cleaned_bidi = sanitize_filename(bidi_name, ext=".mp4")
+    assert "\u202e" not in cleaned_bidi
+    assert "\u202b" not in cleaned_bidi
+    assert "\u2066" not in cleaned_bidi
+    assert "\u2069" not in cleaned_bidi
+    assert cleaned_bidi == "innocenttestpayload.mp4"
+
+
 def test_build_content_disposition_with_unicode_tamil():
     # Tamil title: "காதல்_பாடல்" (Love song)
     tamil_title = "காதல்_பாடல்"
@@ -145,4 +163,28 @@ def test_apply_security_headers():
     assert secured.headers.get("X-Frame-Options") == "SAMEORIGIN"
     assert secured.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
     assert "Content-Security-Policy-Report-Only" in secured.headers
+
+
+def test_is_prod_normalization_and_hsts(mocker):
+    from config import config
+
+    # 1. Test IS_PROD spellings and cases
+    for prod_val in ["prod", "production", "PROD", "Production"]:
+        mocker.patch.object(config, "ENV", prod_val)
+        assert config.IS_PROD is True, f"Failed for {prod_val}"
+
+    for non_prod in ["dev", "stage", "test", "local"]:
+        mocker.patch.object(config, "ENV", non_prod)
+        assert config.IS_PROD is False, f"Failed for {non_prod}"
+
+    # 2. HSTS present when ENV is production
+    mocker.patch.object(config, "ENV", "production")
+    resp_prod = apply_security_headers(Response("OK"))
+    assert "Strict-Transport-Security" in resp_prod.headers
+    assert resp_prod.headers["Strict-Transport-Security"] == "max-age=31536000; includeSubDomains"
+
+    # 3. HSTS absent in dev
+    mocker.patch.object(config, "ENV", "dev")
+    resp_dev = apply_security_headers(Response("OK"))
+    assert "Strict-Transport-Security" not in resp_dev.headers
 

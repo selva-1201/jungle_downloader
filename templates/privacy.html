@@ -12,7 +12,8 @@
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
   <meta name="robots" content="index, follow">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="canonical" href="{{ site_url }}/privacy">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -23,6 +24,7 @@
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
     }
+    :focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 
     .glass-panel {
       background: rgba(25, 25, 25, 0.4);
@@ -46,56 +48,55 @@
         <h1 class="text-2xl font-bold tracking-tight">Jungle Privacy Policy</h1>
       </a>
     </div>
-    <p class="text-gray-500 mt-1 text-sm tracking-wide">Last Updated: May 2026</p>
+    <p class="text-gray-400 mt-1 text-sm tracking-wide">Last Updated: {{ legal_last_updated }}</p>
   </header>
 
   <main
     class="w-full max-w-3xl glass-panel p-8 rounded-2xl shadow-2xl flex flex-col gap-6 text-sm text-gray-400 leading-relaxed">
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">1. Your Privacy Matters</h2>
-      <p>Jungle Media Downloader values your trust and is built from the ground up as a privacy-friendly interface. You
-        can access all
-        our core features entirely anonymously—we do not require sign-ups, email registration, or any personal user
-        profiles to get started.</p>
+      <h2 class="text-base font-semibold text-white mb-2">1. Anonymity by Design</h2>
+      <p>Jungle Media Downloader respects your privacy. You can access and use our service completely anonymously. We do not require account creation, email sign-ups, passwords, or personal demographic profiles to use any feature of the platform.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">2. Processing Your Links Securely</h2>
-      <p>Any URL or link you insert here is handled transiently to establish download streams via the underlying
-        libraries. Jungle Media Downloader never logs, collects, or keeps records of your input history, search
-        metadata, or media
-        streams. As soon as your browser transfer wraps up, all relevant processing data clears right away.</p>
+      <h2 class="text-base font-semibold text-white mb-2">2. Transient Link Processing & No Storage</h2>
+      <p>When you submit a URL for downloading, our servers resolve metadata and facilitate the media stream dynamically. We do not host, archive, or permanently store any user-requested media files on our infrastructure. Temporary tokens and format metadata stored in cache memory expire automatically after a short duration.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">3. Keeping the Servers Running (Cookies & Advertising)</h2>
-      <p>Jungle Media Downloader doesn't deploy individual tracking software. However, maintaining high-speed
-        open-source servers takes
-        continuous work and resource expenses. To keep our service free for the community, we partner with third-party
-        advertising networks to show supportive banner spaces.</p>
-      <p class="mt-2">These helpful ad networks may use standard cookies and anonymous web indicators to display
-        contextually relevant suggestions. If you prefer, you can easily tweak or turn off personalized cookie
-        preferences inside your local web browser settings anytime you want.</p>
+      <h2 class="text-base font-semibold text-white mb-2">3. Server Logs & IP Processing</h2>
+      <p>To enforce fair-use rate limits, protect against automated scrapers, and maintain service availability, our servers process technical request data including your IP address, requested URL, user-agent, and response status. Standard access logs are retained strictly for operational security and abuse prevention for up to 30 days, after which they are permanently deleted.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">4. Moving to External Streams</h2>
-      <p>Our online interface safely points to public media delivery URLs to compile files. Once a file starts
-        downloading directly to your personal system space, the connection links with those external networks. We
-        suggest looking at the friendly usage policies of those unique external platforms for clarity.</p>
+      <h2 class="text-base font-semibold text-white mb-2">4. Cloudflare & Bot Mitigation</h2>
+      <p>Our infrastructure is protected by Cloudflare and Cloudflare Turnstile to prevent automated attacks, credential abuse, and denial-of-service incidents. Cloudflare may evaluate technical browser telemetry and issue security clearance cookies to distinguish human visitors from automated bots without tracking personal identity.</p>
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">5. Updates and Harmony</h2>
-      <p>As the internet evolves, we might update this layout page slightly to stay aligned with performance updates.
-        Enjoying our free interface means you trust how we maintain this clean, zero-logs environment for you.</p>
+      <h2 class="text-base font-semibold text-white mb-2">5. Cookies & Advertising</h2>
+      {% if ads_enabled %}
+      <p>To support high-bandwidth infrastructure costs, we display non-intrusive advertisements served by third-party ad networks. These partners may use cookies and anonymous device identifiers to serve contextual advertisements. You can control or opt out of personalized advertising cookies through your browser preferences or via industry opt-out tools such as the Network Advertising Initiative (NAI) and the Digital Advertising Alliance (DAA).</p>
+      {% else %}
+      <p>Commercial advertising is currently disabled, and no third-party advertising cookies or tracking scripts are loaded on this service.</p>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">6. External Media Hosts</h2>
+      <p>When a download stream begins, your client connects to either our streaming proxy or directly to the target media provider's content distribution network. Those third-party hosts operate independently and have their own respective privacy policies and data collection terms.</p>
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">7. Contact & Inquiries</h2>
+      <p>If you have any questions or concerns regarding this Privacy Policy or our data protection practices, please contact us at <a href="mailto:{{ contact_email }}" class="text-white underline">{{ contact_email }}</a>.</p>
     </section>
 
   </main>
 
-  <footer class="w-full max-w-3xl text-center text-xs text-gray-600 mt-8">
-    <p>© 2026 Jungle Media Downloader. Open-source community utility framework.</p>
+  <footer class="w-full max-w-3xl text-center text-xs text-gray-500 mt-8">
+    <p>© 2026 Jungle Media Downloader. {% if public_repo_url %}<a href="{{ public_repo_url }}" target="_blank" rel="noopener" class="underline hover:text-white">Open Source</a> · {% endif %}Respect copyright laws.</p>
   </footer>
 
 </body>

@@ -6,13 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Supported Sites – Jungle Media Downloader ({{ display_count }})</title>
   <meta name="description" content="Explore the full directory of {{ display_count }} supported websites by Jungle Media Downloader. Download video and audio from TikTok, Instagram, Twitter/X, Reddit, Vimeo, and more.">
-  <link rel="canonical" href="{{ request.url_root }}supported-sites">
+  <link rel="canonical" href="{{ site_url }}/supported-sites">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   <meta name="robots" content="index, follow">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,6 +23,7 @@
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
     }
+    :focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 
     .glass-panel {
       background: rgba(25, 25, 25, 0.4);
@@ -84,7 +86,7 @@
       <h2 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Popular Platforms</h2>
       <div class="flex flex-wrap gap-2 text-xs">
         {% for site in popular %}
-        <span class="glass-card px-3.5 py-1.5 rounded-full text-white font-medium cursor-pointer" onclick="filterBy('{{ site }}')">
+        <span class="popular-site-chip glass-card px-3.5 py-1.5 rounded-full text-white font-medium cursor-pointer" data-site="{{ site }}">
           {{ site }}
         </span>
         {% endfor %}
@@ -159,6 +161,13 @@
     }
 
     searchInput.addEventListener('input', (e) => applyFilter(e.target.value));
+
+    document.querySelectorAll('.popular-site-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const site = chip.getAttribute('data-site');
+        if (site) filterBy(site);
+      });
+    });
   </script>
 </body>
 

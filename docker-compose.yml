@@ -11,6 +11,14 @@ services:
     image: jungle-downloader:latest
     container_name: jungle_app
     restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    cap_drop:
+      - ALL
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     env_file:
       - path: .env
         required: false
@@ -26,8 +34,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.0"
-          memory: 2048M
+          cpus: "${APP_CPUS:-2.0}"
+          # Default 2048M for Ampere A1 (24GB); set to 1024M in .env on AMD Micro (1GB) with swap
+          memory: ${APP_MEM_LIMIT:-2048M}
+          pids: 256
         reservations:
           cpus: "0.5"
           memory: 512M
@@ -38,14 +48,22 @@ services:
         max-file: "3"
     networks:
       - jungle_net
+    volumes:
+      - ./data:/app/data:ro
     # Optional cookies file mount (read-only from outside the repo path if used):
-    # volumes:
     #   - /etc/jungle/cookies.txt:/etc/jungle/cookies.txt:ro
 
   caddy:
-    image: caddy:2.9-alpine
+    # Caddy 2.9 Alpine
+    image: caddy:2.9.1-alpine
     container_name: jungle_caddy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     ports:
       - "80:80"
       - "443:443"

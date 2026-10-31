@@ -9,16 +9,89 @@ from config import config
 
 logger = logging.getLogger(__name__)
 
+MAX_PAYLOAD_BYTES = 512 * 1024  # 512 KB limit per cached media payload
+
+
+def trim_format(fmt: Dict[str, Any], strip_secrets: bool = False) -> Dict[str, Any]:
+    """
+    Retains only essential streaming/format fields.
+    Drops comments, subtitles, and internal parser artifacts.
+    """
+    if not isinstance(fmt, dict):
+        return {}
+
+    trimmed: Dict[str, Any] = {
+        "format_id": fmt.get("format_id"),
+        "url": fmt.get("url"),
+        "protocol": fmt.get("protocol"),
+        "vcodec": fmt.get("vcodec"),
+        "acodec": fmt.get("acodec"),
+        "ext": fmt.get("ext"),
+        "height": fmt.get("height"),
+        "resolution": fmt.get("resolution"),
+        "tbr": fmt.get("tbr"),
+        "abr": fmt.get("abr"),
+        "vbr": fmt.get("vbr"),
+        "filesize": fmt.get("filesize"),
+        "filesize_approx": fmt.get("filesize_approx"),
+    }
+    if "fragments" in fmt:
+        trimmed["fragments"] = fmt["fragments"]
+
+    # Filter http_headers
+    raw_headers = fmt.get("http_headers")
+    if isinstance(raw_headers, dict):
+        headers = dict(raw_headers)
+        if strip_secrets:
+            headers.pop("Cookie", None)
+            headers.pop("cookie", None)
+            headers.pop("Authorization", None)
+            headers.pop("authorization", None)
+        trimmed["http_headers"] = headers
+
+    return {k: v for k, v in trimmed.items() if v is not None}
+
+
+def trim_info(info: Dict[str, Any], strip_secrets: bool = False) -> Dict[str, Any]:
+    """
+    Trims raw yt-dlp info dict to essential fields needed for delivery and streaming.
+    Drops huge descriptions, subtitles, automatic captions, comments, and thumbnails lists.
+    """
+    if not isinstance(info, dict):
+        return {}
+
+    trimmed: Dict[str, Any] = {
+        "id": info.get("id"),
+        "title": info.get("title"),
+        "thumbnail": info.get("thumbnail"),
+        "duration": info.get("duration"),
+        "extractor": info.get("extractor"),
+        "webpage_url": info.get("webpage_url"),
+    }
+
+    formats = info.get("formats", [])
+    if isinstance(formats, list):
+        trimmed["formats"] = [
+            trim_format(f, strip_secrets=strip_secrets)
+            for f in formats
+            if isinstance(f, dict)
+        ]
+    else:
+        trimmed["formats"] = []
+
+    return {k: v for k, v in trimmed.items() if v is not None}
+
 
 class CacheStore:
     """
     In-memory TTL cache with optional Redis backend for extracted video metadata.
-    Provides opaque single-use/multi-use session tokens to prevent repeated yt-dlp extractions.
+    Provides opaque random tokens to prevent repeated yt-dlp extractions.
+    Trims payload before caching and strips secrets before Redis storage.
     """
 
-    def __init__(self, maxsize: int = 1000, ttl: Optional[int] = None):
+    def __init__(self, maxsize: Optional[int] = None, ttl: Optional[int] = None):
         self.ttl = ttl or config.META_CACHE_TTL
-        self.maxsize = maxsize
+        self.maxsize = maxsize or config.CACHE_MAXSIZE
         self._lock = threading.Lock()
         self._memory_cache: TTLCache = TTLCache(maxsize=self.maxsize, ttl=self.ttl)
 
@@ -33,32 +106,60 @@ class CacheStore:
                 logger.warning(f"Failed to connect to Redis ({e}), falling back to in-memory TTLCache.")
                 self._redis_client = None
 
-    def store_metadata(self, info: Dict[str, Any], original_url: str) -> str:
+    def store_metadata(self, info: Dict[str, Any], original_url: str, proxy: Optional[str] = None) -> str:
         """
-        Stores extracted info dict under an opaque random token.
+        Stores trimmed info dict under an opaque random token.
         Returns the opaque token string.
         """
         token = secrets.token_urlsafe(24)
-        payload = {
+
+        # 1. In-memory representation (trimmed, keeps headers needed for current instance)
+        mem_info = trim_info(info, strip_secrets=False)
+
+        # Byte size guard: if formats list is enormous (>512KB), keep top 35 formats
+        try:
+            raw_json = json.dumps(mem_info, default=str)
+            if len(raw_json.encode("utf-8")) > MAX_PAYLOAD_BYTES:
+                formats = mem_info.get("formats", [])
+                if len(formats) > 35:
+                    mem_info["formats"] = formats[:35]
+        except Exception:
+            pass
+
+        payload_memory = {
             "token": token,
             "original_url": original_url,
+            "proxy": proxy,
             "created_at": time.time(),
-            "info": info
+            "info": mem_info
         }
 
+        # 2. Redis representation (strictly strips Cookie / Authorization headers)
         if self._redis_client:
             try:
+                redis_info = trim_info(info, strip_secrets=True)
+                if len(redis_info.get("formats", [])) > 35:
+                    redis_info["formats"] = redis_info["formats"][:35]
+
+                payload_redis = {
+                    "token": token,
+                    "original_url": original_url,
+                    "proxy": proxy,
+                    "created_at": payload_memory["created_at"],
+                    "info": redis_info
+                }
+
                 self._redis_client.setex(
                     f"jungle:media:{token}",
                     self.ttl,
-                    json.dumps(payload, default=str)
+                    json.dumps(payload_redis, default=str)
                 )
                 return token
             except Exception as e:
                 logger.error(f"Redis store error: {e}, storing in memory fallback.")
 
         with self._lock:
-            self._memory_cache[token] = payload
+            self._memory_cache[token] = payload_memory
 
         return token
 
@@ -82,21 +183,6 @@ class CacheStore:
         with self._lock:
             return self._memory_cache.get(token)
 
-    def delete_metadata(self, token: str) -> None:
-        """Removes metadata from cache."""
-        if not token:
-            return
-
-        if self._redis_client:
-            try:
-                self._redis_client.delete(f"jungle:media:{token}")
-            except Exception:
-                pass
-
-        with self._lock:
-            self._memory_cache.pop(token, None)
-
 
 # Global singleton cache instance
 cache_store = CacheStore()
-

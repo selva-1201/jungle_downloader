@@ -5,16 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free</title>
-  <meta name="title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
+  <title>Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free</title>
+  <meta name="title" content="Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free">
   <meta name="description"
-    content="Jungle Media Downloader is a free, open-source utility. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and 1800+ more sites. No login required. MP4 & MP3 supported.">
+    content="Jungle Media Downloader is a free media downloader. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and {{ display_count }} more. No login required. MP4 & MP3 supported.">
   <meta name="keywords" content="
-    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, hotstar video downloader, jiosaavn mp3 downloader, sonyliv downloader, mx player video downloader, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, 1800 sites video downloader, multi site video downloader
+    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, multi site video downloader
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
-  <link rel="canonical" href="{{ request.url_root }}">
+  <link rel="canonical" href="{{ site_url }}/">
 
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
@@ -24,18 +24,18 @@
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="{{ request.url_root }}">
-  <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
+  <meta property="og:url" content="{{ site_url }}/">
+  <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free">
   <meta property="og:description"
-    content="Free, open-source video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and 1800+ more. No sign-in needed. Download MP4 & MP3 instantly.">
+    content="Free video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and {{ display_count }} more. No sign-in needed. Download MP4 & MP3 instantly.">
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
   <meta property="og:site_name" content="Jungle Media Downloader">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="{{ request.url_root }}">
-  <meta name="twitter:title" content="Jungle Media Downloader – Download from 1800+ Sites">
+  <meta name="twitter:url" content="{{ site_url }}/">
+  <meta name="twitter:title" content="Jungle Media Downloader – Download from {{ display_count }}">
   <meta name="twitter:description"
-    content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and 1800+ more sites. MP4 & MP3.">
+    content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and {{ display_count }} more. MP4 & MP3.">
   <meta name="twitter:image" content="{{ url_for('static', filename='og-image.png') }}">
 
   <script type="application/ld+json">
@@ -43,8 +43,8 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Jungle Media Downloader",
-    "url": "{{ request.url_root }}",
-    "description": "Free open-source media downloader supporting 1800+ websites. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
+    "url": "{{ site_url }}/",
+    "description": "Free media downloader supporting {{ display_count }}. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",
     "offers": {
@@ -53,7 +53,7 @@
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Download videos from 1800+ websites",
+      "Download videos from {{ display_count }}",
       "Convert video to MP3 audio",
       "No login or account required",
       "Open source",
@@ -64,7 +64,10 @@
   }
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% if turnstile_site_key %}
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+  {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -75,6 +78,11 @@
       background-color: #050505;
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
+    }
+
+    :focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.6);
+      outline-offset: 2px;
     }
 
     .glass-panel {
@@ -221,6 +229,7 @@
 </head>
 
 <body class="min-h-screen flex flex-col items-center py-12 px-4 antialiased">
+  {% from "_ads.html" import ad_slot with context %}
 
   <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row md:items-center justify-between gap-y-3 md:gap-4">
     <div class="flex flex-col w-full md:w-auto">
@@ -244,7 +253,7 @@
       </div>
     </div>
 
-    <button onclick="toggleTrickModal(true)"
+    <button onclick="toggleTrickModal(true)" aria-label="WhatsApp status save trick"
       class="hidden md:flex flex-row items-center gap-2 px-4 py-2 text-white font-extrabold text-[11px] uppercase tracking-wider cursor-pointer bg-zinc-900/90 border border-[#25D366]/30 rounded-xl shadow-[0_0_15px_rgba(37,211,102,0.25)] hover:shadow-[0_0_22px_rgba(37,211,102,0.5)] transition-all active:scale-95 shrink-0">
       <svg class="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
         <path
@@ -254,16 +263,18 @@
     </button>
   </header>
 
+  {{ ad_slot("header_banner", 728, 90, "mb-6") }}
+
   <main class="w-full max-w-5xl">
 
     <div class="glass-panel p-2 rounded-2xl shadow-2xl mb-6 flex flex-col md:flex-row gap-2">
       <div class="relative flex-1 flex items-center">
         <input type="text" id="videoUrl" placeholder="Paste a YouTube, Instagram, TikTok, Twitter/X, Facebook URL..."
-          class="glass-input w-full p-4 pr-12 rounded-xl text-white outline-none placeholder-gray-500"
+          class="glass-input w-full p-4 pr-12 rounded-xl text-white outline-none placeholder-gray-400"
           oninput="toggleClearButton()" onkeydown="if(event.key==='Enter') fetchMedia()">
 
-        <button id="btnClearUrl" onclick="clearUrlInput()"
-          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg">
+        <button id="btnClearUrl" onclick="clearUrlInput()" aria-label="Clear URL input"
+          class="absolute right-4 hidden text-gray-400 hover:text-gray-300 transition-colors p-1 rounded-lg">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -289,6 +300,12 @@
         </span>
       </button>
     </div>
+
+    {% if turnstile_site_key %}
+    <div id="turnstileWrapper" class="flex justify-center mb-6">
+      <div id="cf-turnstile" class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark"></div>
+    </div>
+    {% endif %}
 
     <div id="errorBox"
       class="hidden glass-panel border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-center text-sm"></div>
@@ -413,6 +430,8 @@
       </div>
     </div>
 
+    {{ ad_slot("below_result", 300, 250, "my-8") }}
+
     <supported-sites></supported-sites>
 
     <section class="mt-4 mb-12 w-full max-w-5xl" aria-label="FAQ">
@@ -441,7 +460,7 @@
           </summary>
           <p class="text-xs text-gray-300 mt-3 leading-relaxed">Yes, absolutely. Once you submit a link, navigate to the
             Audio Downloads section on the panel. Jungle Media Downloader processes extraction for popular media streams
-            like YouTube Music, SoundCloud, and JioSaavn, delivering optimized audio files automatically.</p>
+            like YouTube Music, SoundCloud, and Bandcamp, delivering optimized audio files automatically.</p>
         </details>
 
         <details name="faq-group" class="glass-card p-4 rounded-xl cursor-pointer">
@@ -451,10 +470,13 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </summary>
-          <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader is 100% safe, clean, and secure.
-            We operate on a fully transparent open-source framework. Unlike traditional download platforms, we do not
-            deploy aggressive or misleading pop-under redirect advertisements, nor do we request personal details or
-            software installations.</p>
+          <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader is safe, clean, and secure.
+            {% if ads_enabled %}
+            We display clean, non-intrusive display banners to cover infrastructure costs, but we never deploy deceptive pop-ups, redirect loops, or forced downloads.
+            {% else %}
+            We do not deploy pop-up or redirect advertisements, nor do we request personal details or software installations.
+            {% endif %}
+          </p>
         </details>
 
         <details name="faq-group" class="glass-card p-4 rounded-xl cursor-pointer">
@@ -490,9 +512,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </summary>
-          <p class="text-xs text-gray-300 mt-3 leading-relaxed">No. Jungle Media Downloader is entirely free to use and
-            operates without daily limits, caps, or download quotas. We do not require accounts, logins, or
-            authentication headers, keeping the download flow fast and straightforward.</p>
+          <p class="text-xs text-gray-300 mt-3 leading-relaxed">No account or registration is required. Jungle Media Downloader is free to use, subject only to automated fair-use rate limits per IP address to ensure reliable, high-speed performance for everyone.</p>
         </details>
 
         <details name="faq-group" class="glass-card p-4 rounded-xl cursor-pointer">
@@ -503,7 +523,7 @@
             </svg>
           </summary>
           <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader is powered by the popular yt-dlp
-            automation infrastructure engine, extending support to over 1800+ streaming sites worldwide. Major
+            automation infrastructure engine, extending support to over {{ display_count }} worldwide. Major
             compatible networks include YouTube, Instagram Reels, TikTok, Twitter/X, Facebook, Vimeo, Reddit, and
             hundreds of regional media hosts.</p>
         </details>
@@ -523,22 +543,24 @@
       </div>
     </section>
 
+    {{ ad_slot("sidebar", 300, 250, "my-8") }}
+
   </main>
 
-  <div id="trickModal"
-    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm确定 fade-in">
+  <div id="trickModal" role="dialog" aria-modal="true" aria-labelledby="trickModalTitle"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
     <div
       class="glass-panel w-full max-w-xs sm:max-w-sm md:max-w-md p-5 sm:p-6 md:p-7 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl transition-all">
 
-      <button onclick="toggleTrickModal(false)"
-        class="absolute top-3.5 right-3.5 text-zinc-600 hover:text-zinc-400 transition-colors p-1 rounded-lg">
+      <button onclick="toggleTrickModal(false)" aria-label="Close modal"
+        class="absolute top-3.5 right-3.5 text-zinc-400 hover:text-zinc-200 transition-colors p-1 rounded-lg">
         <svg class="w-4 h-4 sm:w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
 
       <div class="flex flex-col gap-3.5 sm:gap-4 font-mono text-zinc-400 pt-3 text-center">
-        <span class="text-zinc-500 font-semibold uppercase tracking-wider text-[10px] sm:text-xs">
+        <span id="trickModalTitle" class="text-zinc-400 font-semibold uppercase tracking-wider text-[10px] sm:text-xs">
           Open your file manager and follow this instruction:
         </span>
 
@@ -560,22 +582,73 @@
   </div>
 
   <footer class="w-full max-w-5xl border-t border-white/5 pt-6 pb-4 mt-4 text-center text-xs text-gray-400">
-    <p class="mb-2 text-gray-400>
-      Jungle Media Downloader · Open Source · Powered by
-      <a href=" https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
+    <p class="mb-2 text-gray-400">
+      Jungle Media Downloader · {% if public_repo_url %}<a href="{{ public_repo_url }}" target="_blank" rel="noopener" class="underline hover:text-gray-300">Open Source</a> · {% endif %}Powered by
+      <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
       yt-dlp</a>
       · For personal use only · Respect copyright laws
     </p>
     <p class="flex justify-center gap-4 text-gray-400">
-      <a href="/terms.html" class="text-gray-400 hover:underline hover:text-white">Terms of Service</a>
+      <a href="/terms" class="text-gray-400 hover:underline hover:text-white">Terms of Service</a>
       <span>·</span>
-      <a href="/privacy.html" class="text-gray-400 hover:underline hover:text-white">Privacy Policy</a>
+      <a href="/privacy" class="text-gray-400 hover:underline hover:text-white">Privacy Policy</a>
     </p>
   </footer>
 
+  <script src="{{ url_for('static', filename='js/download.js') }}"></script>
   <script>
     let currentMediaData = null;
+    let currentToken = null;
     let activeDownloads = new Set();
+    let isRefreshingToken = false;
+
+    function getTurnstileToken() {
+      if (typeof turnstile !== 'undefined' && turnstile.getResponse) {
+        return turnstile.getResponse() || '';
+      }
+      return '';
+    }
+
+    function resetTurnstile() {
+      if (typeof turnstile !== 'undefined' && turnstile.reset) {
+        try {
+          turnstile.reset();
+        } catch (e) {
+          console.warn('Failed to reset Turnstile', e);
+        }
+      }
+    }
+
+    async function ensureFreshToken() {
+      if (isRefreshingToken) return null;
+      isRefreshingToken = true;
+      try {
+        const inputUrl = (currentMediaData && currentMediaData.original_url) || document.getElementById('videoUrl').value.trim();
+        if (!inputUrl) return null;
+        const payload = { url: inputUrl };
+        const turnstileToken = getTurnstileToken();
+        if (turnstileToken) {
+          payload.turnstile_token = turnstileToken;
+        }
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.success && data.token) {
+          currentMediaData = data;
+          currentToken = data.token;
+          renderMediaInterface(data);
+          return data.token;
+        }
+      } catch (e) {
+        console.error('Failed to refresh token', e);
+      } finally {
+        isRefreshingToken = false;
+      }
+      return null;
+    }
 
     const videoElement = document.getElementById('videoPreview');
     const audioElement = document.getElementById('audioPreview');
@@ -607,7 +680,7 @@
 
     function clearUrlInput() {
       document.getElementById('videoUrl').value = '';
-      document.getElementById('btnClearUrl').add('hidden');
+      document.getElementById('btnClearUrl').classList.add('hidden');
     }
 
     function formatDuration(seconds) {
@@ -620,7 +693,7 @@
       return `${m}:${String(sec).padStart(2, '0')}`;
     }
 
-    async function fetchMedia() {
+    async function fetchMedia(isRetry = false) {
       const urlInput = document.getElementById('videoUrl').value.trim();
       if (!urlInput) return;
 
@@ -654,13 +727,25 @@
       loaderNode.classList.add('flex');
 
       try {
+        const payload = { url: urlInput };
+        const turnstileToken = getTurnstileToken();
+        if (turnstileToken) {
+          payload.turnstile_token = turnstileToken;
+        }
+
         const response = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: urlInput })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
+
+        if (response.status === 403 && data.code === 'BOT_CHALLENGE_REQUIRED' && !isRetry) {
+          resetTurnstile();
+          await new Promise(r => setTimeout(r, 1200));
+          return await fetchMedia(true);
+        }
 
         loaderState.classList.add('hidden');
         loaderState.classList.remove('flex');
@@ -694,12 +779,13 @@
     }
 
     function renderMediaInterface(data) {
+      currentToken = data.token;
       const titleElement = document.getElementById('mediaTitle');
       titleElement.innerText = data.title;
       titleElement.classList.remove('hidden');
 
       if (data.preview_format_id) {
-        const previewUrl = `/api/preview?url=${encodeURIComponent(data.original_url)}&format_id=${encodeURIComponent(data.preview_format_id)}`;
+        const previewUrl = `/api/preview?token=${encodeURIComponent(data.token)}&format_id=${encodeURIComponent(data.preview_format_id)}`;
         videoElement.src = previewUrl;
 
         if (data.duration && data.duration > 0) {
@@ -719,7 +805,7 @@
         if (data.audio_formats && data.audio_formats.length > 0) {
           const firstAudio = data.audio_formats[0];
           if (firstAudio.format_id !== 'auto_extract') {
-            const audioPreviewUrl = `/api/preview?url=${encodeURIComponent(data.original_url)}&format_id=${encodeURIComponent(firstAudio.format_id)}`;
+            const audioPreviewUrl = `/api/preview?token=${encodeURIComponent(data.token)}&format_id=${encodeURIComponent(firstAudio.format_id)}`;
             audioElement.src = audioPreviewUrl;
           } else {
             audioElement.src = previewUrl;
@@ -735,7 +821,7 @@
 
       if (data.audio_formats && data.audio_formats.length > 0) {
         audioContainer.innerHTML = data.audio_formats
-          .map((item, idx) => buildDownloadRow(item, idx, 'audio', data.original_url, data.title))
+          .map((item, idx) => buildDownloadRow(item, idx, 'audio', data.token, data.title))
           .join('');
       } else {
         audioContainer.innerHTML = `
@@ -749,7 +835,7 @@
 
       if (data.video_formats && data.video_formats.length > 0) {
         videoContainer.innerHTML = data.video_formats
-          .map((item, idx) => buildDownloadRow(item, idx, 'video', data.original_url, data.title))
+          .map((item, idx) => buildDownloadRow(item, idx, 'video', data.token, data.title))
           .join('');
       } else {
         videoContainer.innerHTML = `
@@ -767,7 +853,7 @@
       handleResponsiveLayoutView();
     }
 
-    function buildDownloadRow(item, index, type, originalUrl, videoTitle) {
+    function buildDownloadRow(item, index, type, token, videoTitle) {
       const uniqueButtonId = `dl-btn-${type}-${index}`;
       const sanitizedTitle = videoTitle.replace(/[\\/*?:"<>|]/g, '_').trim();
       const defaultFilename = type === 'video'
@@ -785,10 +871,11 @@
               </div>
             </div>
             <button id="${uniqueButtonId}"
-                    data-url="${encodeURIComponent(originalUrl)}"
+                    data-token="${encodeURIComponent(token)}"
                     data-format-id="${encodeURIComponent(item.format_id)}"
                     data-filename="${encodeURIComponent(defaultFilename)}"
                     data-type="${type}"
+                    aria-label="Download ${item.format} ${item.quality}"
                     onclick="executeDownload(this)"
                     class="download-btn p-3 hover:bg-white/10 text-gray-300 rounded-xl transition-all cursor-pointer border border-white/5 active:scale-95 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed">
               <svg class="w-5 h-5 icon-dl-static" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -807,15 +894,17 @@
       `;
     }
 
-    function executeDownload(btn) {
-      const pageUrl = decodeURIComponent(btn.dataset.url);
+    async function executeDownload(btn, isRetry = false) {
+      const token = decodeURIComponent(btn.dataset.token || currentToken || '');
       const formatId = decodeURIComponent(btn.dataset.formatId);
       const filename = decodeURIComponent(btn.dataset.filename);
-      const mediaType = btn.dataset.type;
+      const mediaType = btn.dataset.type || 'video';
       const btnId = btn.id;
 
       if (activeDownloads.has(btnId)) return;
       activeDownloads.add(btnId);
+
+      clearError();
 
       const allButtons = document.querySelectorAll('.download-btn');
       allButtons.forEach(b => b.disabled = true);
@@ -829,17 +918,72 @@
       const progressBar = document.getElementById(`progress-${btnId}`);
       if (progressBar) progressBar.classList.remove('hidden');
 
-      const streamUrl = `/api/stream?url=${encodeURIComponent(pageUrl)}&format_id=${encodeURIComponent(formatId)}&filename=${encodeURIComponent(filename)}&type=${mediaType}`;
+      const streamUrl = buildStreamUrl(token, formatId, filename, mediaType);
 
-      window.location.assign(streamUrl);
+      // Trigger download via hidden iframe
+      triggerDownloadFrame(streamUrl);
 
-      setTimeout(() => {
+      // Poll document.cookie for dl_<token> every 500ms (timeout 60s)
+      const startTime = Date.now();
+      let probeAttempted = false;
+
+      const resetUi = () => {
         activeDownloads.delete(btnId);
         allButtons.forEach(b => b.disabled = false);
         if (staticIcon) staticIcon.classList.remove('hidden');
         if (spinnerIcon) spinnerIcon.classList.add('hidden');
         if (progressBar) progressBar.classList.add('hidden');
-      }, 5000);
+      };
+
+      const pollTimer = setInterval(async () => {
+        const elapsed = Date.now() - startTime;
+
+        // 1. Success check: cookie detected
+        if (hasDownloadCookie(token)) {
+          clearInterval(pollTimer);
+          clearDownloadCookie(token);
+          resetUi();
+          return;
+        }
+
+        // 2. Early error probe after 3s if cookie has not appeared
+        if (elapsed >= 3000 && !probeAttempted) {
+          probeAttempted = true;
+          try {
+            const probeResp = await fetch(streamUrl, {
+              headers: { 'Range': 'bytes=0-0' }
+            });
+
+            if (!probeResp.ok) {
+              clearInterval(pollTimer);
+              const errData = await probeResp.json().catch(() => ({}));
+
+              if (probeResp.status === 410 && errData.code === 'SESSION_EXPIRED' && !isRetry) {
+                resetUi();
+                const freshTok = await ensureFreshToken();
+                if (freshTok) {
+                  btn.dataset.token = encodeURIComponent(freshTok);
+                  return executeDownload(btn, true);
+                }
+              }
+
+              resetUi();
+              const msg = errData.error || 'Download failed. Please try again.';
+              showErrorWithRetry(msg, () => executeDownload(btn, true));
+              return;
+            }
+          } catch (e) {
+            // Probe network error, continue polling
+          }
+        }
+
+        // 3. Timeout at 60s
+        if (elapsed >= 60000) {
+          clearInterval(pollTimer);
+          resetUi();
+          showErrorWithRetry('Download request timed out. Please retry.', () => executeDownload(btn, true));
+        }
+      }, 500);
     }
 
     function switchTab(targetType) {
@@ -886,6 +1030,27 @@
       box.classList.remove('hidden');
     }
 
+    function showErrorWithRetry(msg, retryCallback) {
+      const box = document.getElementById('errorBox');
+      box.replaceChildren();
+      const p = document.createElement('p');
+      p.className = 'mb-2';
+      p.textContent = msg;
+      box.appendChild(p);
+
+      if (retryCallback) {
+        const btn = document.createElement('button');
+        btn.className = 'glass-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/20 transition-all';
+        btn.textContent = 'Retry Download';
+        btn.onclick = () => {
+          box.classList.add('hidden');
+          retryCallback();
+        };
+        box.appendChild(btn);
+      }
+      box.classList.remove('hidden');
+    }
+
     function toggleTrickModal(show) {
       const modal = document.getElementById('trickModal');
       if (show) {
@@ -900,6 +1065,16 @@
     window.addEventListener('resize', () => {
       if (currentMediaData) handleResponsiveLayoutView();
     });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggleTrickModal(false);
+        const supportedComp = document.querySelector('supported-sites');
+        if (supportedComp && typeof supportedComp.closeModal === 'function') {
+          supportedComp.closeModal();
+        }
+      }
+    });
   </script>
 
   <script>
@@ -910,7 +1085,7 @@
 
         this.topSites = [
           "YouTube", "Instagram", "TikTok", "Facebook", "Twitter", "Reddit", "Vimeo", "Twitch",
-          "SoundCloud", "Dailymotion", "Pinterest", "LinkedIn", "Bilibili", "JioSaavn", "Snapchat"
+          "SoundCloud", "Dailymotion", "Pinterest", "LinkedIn", "Bilibili", "Tumblr", "Snapchat"
         ];
 
         this.innerHTML = `
@@ -918,7 +1093,7 @@
              <h2 class="text-lg font-semibold text-gray-300 mb-3">Jungle Supported Sites</h2>
 
           <p class="text-sm text-gray-400 mb-4">
-            Supports <strong class="text-white" id="sites-display-count">1000+ websites</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> or <a href="/supported-sites" class="underline hover:text-white">browse the full directory</a> to check if your desired site is available.
+            Supports <strong class="text-white" id="sites-display-count">{{ display_count }}</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> or <a href="/supported-sites" class="underline hover:text-white">browse the full directory</a> to check if your desired site is available.
           </p>
 
             <div class="flex flex-wrap items-center gap-2 text-xs text-white-600">
@@ -929,12 +1104,12 @@
             </div>
           </section>
 
-          <div id="sites-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+          <div id="sites-modal" role="dialog" aria-modal="true" aria-labelledby="sitesModalTitle" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
             <div class="glass-panel w-full max-w-3xl h-[80vh] flex flex-col p-6 rounded-2xl relative border border-white/10 bg-zinc-950/95 shadow-2xl">
 
               <div class="flex justify-between items-start mb-2 shrink-0">
-                <h3 class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supported Sites</h3>
-                <button id="close-modal-btn" class="text-zinc-500 hover:text-zinc-300 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer">
+                <h3 id="sitesModalTitle" class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supported Sites</h3>
+                <button id="close-modal-btn" aria-label="Close modal" class="text-zinc-400 hover:text-zinc-200 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>
@@ -1032,14 +1207,19 @@
       }
 
       renderSites(sitesToRender) {
+        this.sitesGrid.replaceChildren();
         if (!sitesToRender || sitesToRender.length === 0) {
-          this.sitesGrid.innerHTML = '';
           this.notFoundMsg.classList.remove('hidden');
         } else {
           this.notFoundMsg.classList.add('hidden');
-          this.sitesGrid.innerHTML = sitesToRender.map(site =>
-            `<span class="glass-card px-3 py-1.5 rounded-md border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">${site}</span>`
-          ).join('');
+          const fragment = document.createDocumentFragment();
+          sitesToRender.forEach(site => {
+            const span = document.createElement('span');
+            span.className = 'glass-card px-3 py-1.5 rounded-md border border-white/5 bg-white/5 hover:bg-white/10 transition-colors';
+            span.textContent = site;
+            fragment.appendChild(span);
+          });
+          this.sitesGrid.appendChild(fragment);
         }
       }
     }

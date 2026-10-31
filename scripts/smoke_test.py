@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import time
-from typing import Dict, List
+from typing import Any, Dict, List
 import yt_dlp
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "smoke_urls.json")
@@ -21,11 +21,11 @@ def run_smoke_test(config_path: str = DEFAULT_CONFIG_PATH) -> bool:
     with open(config_path, "r", encoding="utf-8") as f:
         targets: List[Dict[str, Any]] = json.load(f)
 
-    print(f"\n=======================================================")
-    print(f"  Jungle Media Downloader — yt-dlp Smoke Test")
+    print("\n=======================================================")
+    print("  Jungle Media Downloader — yt-dlp Smoke Test")
     print(f"  yt-dlp version: {yt_dlp.version.__version__}")
     print(f"  Target platforms: {len(targets)}")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
 
     results = []
     overall_pass = True

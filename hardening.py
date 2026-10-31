@@ -2,8 +2,6 @@ import ipaddress
 import re
 import unicodedata
 import urllib.parse
-import uuid
-from typing import Optional, Set
 from flask import Request, Response
 from config import config
 from security import SSRFValidationError
@@ -84,24 +82,35 @@ def sanitize_filename(filename: str, ext: str = ".mp4") -> str:
     """
     Sanitizes arbitrary user or video title strings into a safe filename.
     Strips CR, LF, nulls, path traversal separators, and quotes.
+    Caps filename length to at most 150 characters before extension.
+    Strips Unicode bidirectional override characters (U+202A-202E, U+2066-2069).
     """
     if not filename:
         filename = "Jungle_Download"
 
+    if ext and filename.lower().endswith(ext.lower()):
+        base = filename[:-len(ext)]
+    else:
+        base = filename
+
+    # Strip bidi override characters (U+202A-202E, U+2066-2069)
+    clean = re.sub(r"[\u202a-\u202e\u2066-\u2069]", "", base)
+
     # Strip newlines, control characters, nulls
-    clean = re.sub(r"[\r\n\x00-\x1f\x7f]", "", filename).strip()
+    clean = re.sub(r"[\r\n\x00-\x1f\x7f]", "", clean).strip()
 
     # Strip path traversal and filesystem special chars
     clean = re.sub(r'[/\\?%*:|"<>]+', "_", clean)
     clean = clean.strip("._ ")
 
+    # Cap base filename length to at most 150 characters before extension
+    if len(clean) > 150:
+        clean = clean[:150].strip("._ ")
+
     if not clean:
         clean = "Jungle_Download"
 
-    if not clean.lower().endswith(ext.lower()):
-        clean = f"{clean}{ext}"
-
-    return clean
+    return f"{clean}{ext}"
 
 
 def build_content_disposition(filename: str, ext: str = ".mp4") -> str:
@@ -124,23 +133,36 @@ def build_content_disposition(filename: str, ext: str = ".mp4") -> str:
     return f"attachment; filename=\"{ascii_clean}\"; filename*=UTF-8''{utf8_encoded}"
 
 
+BOT_PATTERN = re.compile(
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    re.IGNORECASE,
+)
+
+
 def map_error_message(exc: Exception) -> str:
     """Maps internal exceptions into safe, user-friendly messages without leaking traces."""
     if isinstance(exc, SSRFValidationError):
         return "This URL is not permitted or cannot be processed."
 
-    err_str = str(exc).lower()
+    err_str = str(exc)
+    err_lower = err_str.lower()
 
-    if "too long" in err_str or "duration" in err_str:
+    if "too long" in err_lower or "duration" in err_lower:
         return f"Video too long (maximum allowed is {config.MAX_DURATION_SEC // 60} minutes)."
 
-    if "429" in err_str or "too many requests" in err_str or "bot" in err_str or "sign in" in err_str:
+    if BOT_PATTERN.search(err_str) or "sign in" in err_lower:
         return "Site temporarily blocking us, try again later."
 
-    if "not supported" in err_str or "unsupported" in err_str or "no suitable extractor" in err_str:
+    if "403" in err_lower or "forbidden" in err_lower:
+        return "Access to this media is forbidden or restricted by upstream provider."
+
+    if "404" in err_lower or "not found" in err_lower:
+        return "Media not found on upstream provider."
+
+    if "not supported" in err_lower or "unsupported" in err_lower or "no suitable extractor" in err_lower:
         return "This site is not supported."
 
-    if "private or non-global" in err_str or "blocked" in err_str:
+    if "private or non-global" in err_lower or "blocked" in err_lower:
         return "This site is not supported."
 
     return "Could not process this link. Please verify the URL and try again."
@@ -155,13 +177,14 @@ def apply_security_headers(response: Response) -> Response:
     h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
 
     # HSTS in production
-    if config.ENV == "prod":
+    if config.IS_PROD:
         h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # CSP in Report-Only mode
+    extra_scripts = (" " + " ".join(config.CSP_EXTRA_SCRIPT_SRC)) if config.CSP_EXTRA_SCRIPT_SRC else ""
     h["Content-Security-Policy-Report-Only"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https:; "
+        f"script-src 'self' 'unsafe-inline' https:{extra_scripts}; "
         "style-src 'self' 'unsafe-inline' https:; "
         "img-src 'self' data: https:; "
         "media-src 'self' blob: https:; "

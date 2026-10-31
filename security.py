@@ -4,6 +4,10 @@ import socket
 import urllib.parse
 from typing import Dict, List, Optional
 import requests
+from requests.adapters import HTTPAdapter
+import urllib3
+from urllib3.connection import HTTPConnection, HTTPSConnection
+from urllib3.connectionpool import HTTPConnectionPool, HTTPSConnectionPool
 from config import config
 
 
@@ -79,7 +83,11 @@ def validate_public_url(url: str) -> urllib.parse.ParseResult:
     if not url or len(url) > 2048:
         raise SSRFValidationError("URL missing or exceeds maximum allowed length of 2048 characters.")
 
-    parsed = urllib.parse.urlsplit(url)
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        port = parsed.port
+    except ValueError as e:
+        raise SSRFValidationError(f"Invalid URL or port: {e}")
 
     # 1. Scheme validation
     if parsed.scheme.lower() not in ("http", "https"):
@@ -90,8 +98,8 @@ def validate_public_url(url: str) -> urllib.parse.ParseResult:
         raise SSRFValidationError("User authentication in URLs is prohibited.")
 
     # 3. Port validation (default 80/443 only)
-    if parsed.port not in (None, 80, 443):
-        raise SSRFValidationError(f"Prohibited destination port '{parsed.port}'. Only ports 80 and 443 are allowed.")
+    if port not in (None, 80, 443):
+        raise SSRFValidationError(f"Prohibited destination port '{port}'. Only ports 80 and 443 are allowed.")
 
     # 4. Hostname validation
     hostname = parsed.hostname
@@ -126,22 +134,100 @@ def validate_public_url(url: str) -> urllib.parse.ParseResult:
     return parsed
 
 
+def resolve_and_pin(url: str) -> str:
+    """
+    Validates URL and resolves its hostname, returning the validated IP address.
+    Reduces TOCTOU window for outbound requests by pinning to the resolved IP.
+    Note: ffmpeg and yt-dlp do not natively support IP pinning and are protected
+    at the network level via container egress firewall rules (see P16).
+    """
+    parsed = validate_public_url(url)
+    hostname = parsed.hostname
+    addr_info = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    if not addr_info:
+        raise SSRFValidationError(f"No IP addresses resolved for hostname '{hostname}'.")
+    return addr_info[0][4][0]
+
+
+class PinnedHTTPConnection(HTTPConnection):
+    pinned_ip: Optional[str] = None
+    def _new_conn(self):
+        return socket.create_connection((self.pinned_ip, self.port), self.timeout, self.source_address)
+
+
+class PinnedHTTPSConnection(HTTPSConnection):
+    pinned_ip: Optional[str] = None
+    def _new_conn(self):
+        return socket.create_connection((self.pinned_ip, self.port), self.timeout, self.source_address)
+
+
+class PinnedIPPoolManager(urllib3.PoolManager):
+    def __init__(self, pinned_ip: str, *args, **kwargs):
+        self.pinned_ip = pinned_ip
+        super().__init__(*args, **kwargs)
+
+    def _new_pool(self, scheme, host, port, request_context=None):
+        pinned = self.pinned_ip
+        if scheme == "http":
+            class CustomConn(PinnedHTTPConnection):
+                pinned_ip = pinned
+            class CustomPool(HTTPConnectionPool):
+                ConnectionCls = CustomConn
+            return CustomPool(host, port, **self.connection_pool_kw)
+        elif scheme == "https":
+            class CustomHTTPSConn(PinnedHTTPSConnection):
+                pinned_ip = pinned
+            class CustomHTTPSPool(HTTPSConnectionPool):
+                ConnectionCls = CustomHTTPSConn
+            return CustomHTTPSPool(host, port, **self.connection_pool_kw)
+        return super()._new_pool(scheme, host, port, request_context=request_context)
+
+
+class PinnedIPAdapter(HTTPAdapter):
+    """
+    Custom requests HTTPAdapter that forces connections to a pre-validated IP
+    address while preserving the HTTP Host header and TLS SNI verification.
+    """
+    def __init__(self, pinned_ip: str, **kwargs):
+        self.pinned_ip = pinned_ip
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        self.poolmanager = PinnedIPPoolManager(
+            self.pinned_ip,
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            **pool_kwargs
+        )
+
+
 def safe_requests_get(
     url: str,
     headers: Optional[Dict[str, str]] = None,
     stream: bool = False,
     timeout: int = 30,
-    max_hops: int = 5
+    max_hops: int = 5,
+    proxies: Optional[Dict[str, str]] = None
 ) -> requests.Response:
     """
-    Executes an HTTP GET request with manual redirect validation.
+    Executes an HTTP GET request with manual redirect validation and IP pinning.
     Ensures every redirect hop is rigorously validated against SSRF rules.
     """
     current_url = url
     for hop in range(max_hops):
         validate_public_url(current_url)
 
-        resp = requests.get(
+        session = requests.Session()
+        if proxies:
+            session.proxies = proxies
+        else:
+            pinned_ip = resolve_and_pin(current_url)
+            adapter = PinnedIPAdapter(pinned_ip)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+
+        resp = session.get(
             current_url,
             headers=headers,
             stream=stream,
@@ -152,14 +238,60 @@ def safe_requests_get(
         if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
             location = resp.headers.get("Location")
             if not location:
+                validate_public_url(current_url)
                 return resp
+            if stream:
+                resp.close()
             # Resolve relative redirects against current URL
             current_url = urllib.parse.urljoin(current_url, location)
             continue
 
+        validate_public_url(current_url)
         return resp
 
     raise SSRFValidationError(f"Too many redirects (exceeded limit of {max_hops}).")
+
+
+def validate_extracted_urls(info: Dict) -> Dict:
+    """
+    Validates all media URLs inside yt-dlp extracted info dictionary.
+    Drops any formats targeting non-public / internal IP addresses.
+    """
+    formats = info.get("formats", [])
+    valid_formats = []
+    for f in formats:
+        fmt_url = f.get("url")
+        if fmt_url:
+            try:
+                validate_public_url(fmt_url)
+            except SSRFValidationError:
+                continue
+
+        manifest_url = f.get("manifest_url")
+        if manifest_url:
+            try:
+                validate_public_url(manifest_url)
+            except SSRFValidationError:
+                continue
+
+        fragments = f.get("fragments")
+        if fragments and isinstance(fragments, list):
+            bad_fragment = False
+            for frag in fragments:
+                frag_url = frag.get("url") if isinstance(frag, dict) else None
+                if frag_url:
+                    try:
+                        validate_public_url(frag_url)
+                    except SSRFValidationError:
+                        bad_fragment = True
+                        break
+            if bad_fragment:
+                continue
+
+        valid_formats.append(f)
+
+    info["formats"] = valid_formats
+    return info
 
 
 def build_safe_ffmpeg_args(
@@ -167,20 +299,31 @@ def build_safe_ffmpeg_args(
     audio_url: Optional[str] = None,
     is_audio_only: bool = False,
     max_duration: int = 1200,
-    headers_dict: Optional[Dict[str, str]] = None
+    headers_dict: Optional[Dict[str, str]] = None,
+    audio_headers_dict: Optional[Dict[str, str]] = None,
+    proxy_url: Optional[str] = None
 ) -> List[str]:
     """
     Constructs an explicit, injection-safe ffmpeg command argument list.
     Enforces protocol whitelists, duration limits, and safe operand placement.
+    Applies -headers before EACH -i (video and audio) using each format's own headers.
     """
     ff_cmd = [
         "ffmpeg",
         "-hide_banner",
         "-loglevel", "error",
         "-protocol_whitelist", "http,https,tcp,tls,crypto",
+        "-rw_timeout", str(int(config.FFMPEG_TIMEOUT_SEC * 1_000_000)),
         "-t", str(max_duration),
         "-max_muxing_queue_size", "1024"
     ]
+
+    if proxy_url:
+        if proxy_url.startswith("http://") or proxy_url.startswith("https://"):
+            ff_cmd.extend(["-http_proxy", proxy_url])
+        elif proxy_url.startswith("socks"):
+            import logging
+            logging.getLogger(__name__).warning("SOCKS proxy is not supported for ffmpeg; skipping -http_proxy.")
 
     def _format_headers(h_dict: Optional[Dict[str, str]]) -> str:
         if not h_dict:
@@ -195,7 +338,8 @@ def build_safe_ffmpeg_args(
 
     if is_audio_only:
         target_url = audio_url if audio_url else video_url
-        headers_str = _format_headers(headers_dict)
+        h_dict = audio_headers_dict if (audio_url and audio_headers_dict) else headers_dict
+        headers_str = _format_headers(h_dict)
         if headers_str:
             ff_cmd.extend(["-headers", headers_str])
         ff_cmd.extend(["-i", target_url, "-vn", "-f", "mp3", "-b:a", "192k", "pipe:1"])
@@ -205,7 +349,12 @@ def build_safe_ffmpeg_args(
         if headers_str:
             ff_cmd.extend(["-headers", headers_str])
         ff_cmd.extend(["-i", video_url])
+
+        audio_headers_str = _format_headers(audio_headers_dict or headers_dict)
+        if audio_headers_str:
+            ff_cmd.extend(["-headers", audio_headers_str])
         ff_cmd.extend(["-i", audio_url])
+
         ff_cmd.extend([
             "-map", "0:v:0", "-map", "1:a:0",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",

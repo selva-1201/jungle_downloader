@@ -87,14 +87,22 @@ Operational procedures, incident response workflows, and maintenance runbooks fo
    ```
 3. **Prune Unused Docker Layers & Logs**:
    ```bash
-   # Remove dangling images, stopped containers, and build cache
-   docker system prune -af --volumes
+   # Remove dangling images, stopped containers, and build cache safely.
+   # CAUTION: Never pass --volumes! Passing --volumes will destroy the caddy_data volume and wipe SSL certificates.
+   docker system prune -af
 
    # Truncate any oversized container logs
    sudo truncate -s 0 /var/lib/docker/containers/*/*-json.log
    ```
 4. **Inspect `/tmp` tmpfs**:
    The `app` container mounts `/tmp` as a `512MB` tmpfs in memory. No persistent disk writes occur during media streaming.
+
+5. **Automated Resource Monitoring (Cron)**:
+   A lightweight resource watchdog script is provided in `scripts/disk_ram_alert.sh`. Set up a cron job to monitor disk and RAM usage and deliver instant Telegram alerts if usage exceeds thresholds (default: Disk >= 85%, RAM >= 90%):
+   ```bash
+   # Add to crontab (runs every 5 minutes):
+   */5 * * * * /opt/jungle_downloader/scripts/disk_ram_alert.sh >> /var/log/jungle_resource.log 2>&1
+   ```
 
 ---
 
@@ -153,10 +161,10 @@ Jungle Media Downloader processes links ephemerally and stores no user media. Ho
    ```
 4. **Verify Block Takes Effect**:
    ```bash
-   curl -s -X POST http://127.0.0.1:5000/api/preview \
+   curl -s -X POST http://127.0.0.1:5000/api/download \
      -H "Content-Type: application/json" \
      -d '{"url": "https://infringing-domain.com/video"}'
-   # Must return 400 with "This platform or URL has been restricted."
+   # Must return 400 with "This domain is not supported." or DMCA removal notice
    ```
 5. **Reply to Notice**:
    Send confirmation acknowledging the restriction within 24 hours.
@@ -196,7 +204,7 @@ Because Jungle Media Downloader is completely **stateless** (no database, no use
 ## 7. Monitoring & Health Checks
 
 - **External Monitoring**: Point [UptimeRobot](https://uptimerobot.com) or StatusCake to:
-  `https://example.com/healthz` (Expects HTTP 200 `{"status": "healthy"}`).
+  `https://example.com/healthz` (Expects HTTP 200 `{"status": "ok"}`).
 - **Telegram Smoke Test Alerts**:
   Configure `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the host environment for instant notification if daily automated tests fail.
 - **Internal Metrics Inspection**:

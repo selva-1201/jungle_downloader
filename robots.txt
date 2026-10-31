@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Allow: /terms.html
-Allow: /privacy.html
-Disallow: /api/
-
-Sitemap: [jungle_url]sitemap.xml

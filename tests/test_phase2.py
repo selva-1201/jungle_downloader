@@ -275,3 +275,104 @@ def test_site_name_prettifier():
     assert prettify_site_name("twitter") == "Twitter / X"
     assert prettify_site_name("abc.net.au") == "abc.net.au"
     assert prettify_site_name("vimeo") == "Vimeo"
+
+
+# ============================================================
+# 5. P05 PROXY CONSISTENCY & BUDGET ENFORCEMENT TESTS
+# ============================================================
+def test_bytes_counted_after_streaming(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    proxy_router.proxied_bytes_today = 0
+    token = cache_store.store_metadata({
+        "title": "Proxied Test",
+        "extractor": "vimeo",
+        "formats": [{
+            "format_id": "prog1",
+            "url": "https://cdn.example.org/stream.mp4",
+            "vcodec": "avc1",
+            "acodec": "mp4a",
+            "protocol": "https"
+        }]
+    }, "https://vimeo.com/12345", proxy="http://proxy.test:8080")
+
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.headers = {"Content-Length": "1024", "Content-Type": "video/mp4"}
+    mock_resp.iter_content.return_value = [b"x" * 512, b"y" * 512]
+    mocker.patch("app.safe_requests_get", return_value=mock_resp)
+
+    resp = client.get(f"/api/stream?token={token}&format_id=prog1")
+    assert resp.status_code == 200
+    # Drain generator
+    _ = resp.data
+    assert proxy_router.proxied_bytes_today == 1024
+
+
+def test_budget_exceeded_degrades_gracefully(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "PROXIED_DAILY_BYTE_BUDGET_GB", 1)
+    mocker.patch.object(config, "PROXY_RULES", {"instagram": "http://instaproxy:8080"})
+    proxy_router.proxied_bytes_today = 2 * 1024 * 1024 * 1024  # 2 GB > 1 GB cap
+
+    resp = client.post("/api/download", json={"url": "https://www.instagram.com/p/C12345/"})
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert "temporarily unavailable" in data["error"].lower()
+
+
+def test_consistent_proxy_used_for_extraction_and_stream(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch("security.validate_public_url", return_value=True)
+    mocker.patch.object(config, "PROXY_RULES", {"vimeo": "http://vimeoproxy:8080"})
+    proxy_router.proxied_bytes_today = 0
+
+    mock_info = {
+        "title": "Vimeo Video",
+        "extractor": "vimeo",
+        "formats": [{
+            "format_id": "v1",
+            "url": "https://1.1.1.1/video.mp4",
+            "vcodec": "avc1",
+            "acodec": "mp4a",
+            "protocol": "https"
+        }]
+    }
+    mocker.patch("app.fetch_fresh_metadata", return_value=mock_info)
+    mock_stream_direct = mocker.patch("app.stream_via_direct_url", return_value=(iter([b"chunk"]), "video/mp4", 5))
+
+    resp = client.post("/api/download", json={"url": "https://vimeo.com/12345"})
+    assert resp.status_code == 200
+    token = resp.get_json()["token"]
+
+    cached = cache_store.get_metadata(token)
+    assert cached["proxy"] == "http://vimeoproxy:8080"
+
+    resp_stream = client.get(f"/api/stream?token={token}&format_id=v1")
+    assert resp_stream.status_code == 200
+    _ = resp_stream.data
+
+    mock_stream_direct.assert_called_once()
+    assert mock_stream_direct.call_args[1]["proxy_url"] == "http://vimeoproxy:8080"
+
+
+def test_yt_mode_proxy_without_rule_returns_friendly_error(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "YT_MODE", "proxy")
+    mocker.patch.object(config, "PROXY_RULES", {})
+    mocker.patch.object(config, "YTDLP_PROXY", "")
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+    assert resp.status_code == 503
+    data = resp.get_json()
+    assert "YouTube is temporarily unavailable, other sites work" in data["error"]
+
+
+def test_yt_mode_disabled_rejects_youtube(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "YT_MODE", "disabled")
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "YouTube downloads are disabled." in data["error"]
+

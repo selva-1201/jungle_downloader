@@ -1,0 +1,4 @@
+# Adult Extractor Review Candidates (Generated via Heuristic Pass 2)
+# Manual review only - DO NOT AUTO-MERGE into data/adult_extractors.txt
+# Whitelist: adultswim is excluded
+skylinewebcams
