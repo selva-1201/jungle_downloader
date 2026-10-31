@@ -3,7 +3,7 @@ import logging
 import secrets
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from cachetools import TTLCache
 from config import config
 
@@ -182,20 +182,6 @@ class CacheStore:
 
         with self._lock:
             return self._memory_cache.get(token)
-
-    def delete_metadata(self, token: str) -> None:
-        """Removes metadata from cache."""
-        if not token:
-            return
-
-        if self._redis_client:
-            try:
-                self._redis_client.delete(f"jungle:media:{token}")
-            except Exception:
-                pass
-
-        with self._lock:
-            self._memory_cache.pop(token, None)
 
 
 # Global singleton cache instance

@@ -1,14 +1,12 @@
 import logging
 import os
-import subprocess
 import time
 import uuid
 from collections import Counter
+from typing import Optional
 import gevent
 from gevent import subprocess as gevent_subprocess
-from urllib.parse import quote
 from flask import Flask, render_template, request, jsonify, Response, redirect, g, make_response
-from werkzeug.exceptions import HTTPException
 from flask_limiter import Limiter
 import yt_dlp
 import requests
@@ -31,7 +29,6 @@ from security import (
 from blocklist import blocklist_manager
 from hardening import (
     get_real_client_ip,
-    sanitize_filename,
     build_content_disposition,
     map_error_message,
     apply_security_headers,
@@ -760,7 +757,6 @@ def stream_download():
         }), 410
 
     info = cached.get("info")
-    page_url = cached.get("original_url")
     if not info:
         return jsonify({
             "success": False,

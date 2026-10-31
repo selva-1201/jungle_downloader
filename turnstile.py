@@ -10,7 +10,7 @@ from config import config
 logger = logging.getLogger(__name__)
 
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-COOKIE_NAME = "jungle_cf_clearance"
+CLEARANCE_COOKIE_NAME = "cf_clearance_token"
 COOKIE_MAX_AGE = 900  # 15 minutes
 
 def _get_secret_key() -> bytes:

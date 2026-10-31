@@ -2,8 +2,6 @@ import ipaddress
 import re
 import unicodedata
 import urllib.parse
-import uuid
-from typing import Optional, Set
 from flask import Request, Response
 from config import config
 from security import SSRFValidationError

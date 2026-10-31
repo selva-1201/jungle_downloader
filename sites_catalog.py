@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional, Set
 import yt_dlp
 from config import config
 

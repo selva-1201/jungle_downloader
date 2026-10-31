@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "E501",  # line too long (long regexes, comments, URLs)
+    "E402",  # module level import not at top of file (gevent monkey-patching / logging setup in app.py)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "F401", "F841"]

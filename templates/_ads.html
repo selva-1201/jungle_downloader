@@ -1,15 +1,15 @@
 {% macro ad_slot(name, width, height, extra_classes="") %}
+{% if ads_enabled %}
 <div class="ad-container-wrapper {{ extra_classes }}"
      id="ad-slot-{{ name }}"
-     style="{% if not ads_enabled %}display: none;{% else %}min-height: {{ height }}px; width: 100%; max-width: {{ width }}px; margin: 1.5rem auto;{% endif %}">
-  {% if ads_enabled %}
-    <div class="text-[10px] uppercase text-zinc-500 tracking-wider mb-1 text-center font-medium">Advertisement</div>
-    <div class="glass-card flex items-center justify-center border border-white/5 bg-zinc-900/40 rounded-xl overflow-hidden"
-         style="height: {{ height }}px; width: 100%;">
-      <!-- Future ad network script will mount here -->
-      <div class="text-zinc-600 text-xs font-mono">Ad Slot: {{ name }} ({{ width }}x{{ height }})</div>
-    </div>
-  {% endif %}
+     style="min-height: {{ height }}px; width: 100%; max-width: {{ width }}px; margin: 1.5rem auto;">
+  <div class="text-[10px] uppercase text-zinc-500 tracking-wider mb-1 text-center font-medium">Advertisement</div>
+  <div class="glass-card flex items-center justify-center border border-white/5 bg-zinc-900/40 rounded-xl overflow-hidden"
+       style="height: {{ height }}px; width: 100%;">
+    <!-- Future ad network script will mount here -->
+    <div class="text-zinc-600 text-xs font-mono">Ad Slot: {{ name }} ({{ width }}x{{ height }})</div>
+  </div>
 </div>
+{% endif %}
 {% endmacro %}
 
