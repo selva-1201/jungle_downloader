@@ -200,26 +200,15 @@ ufw --force enable
 log_success "UFW firewall active and configured."
 
 # ------------------------------------------------------------------------------
-# 8. Oracle IMDS Protection (Drop Container Egress to 169.254.169.254)
+# 8. Container Egress Lockdown (RFC 1918, Link-Local & Oracle IMDS Protection)
 # ------------------------------------------------------------------------------
-# Ensures Docker containers cannot access Oracle Cloud's Instance Metadata Service.
-log_info "Configuring Oracle Cloud IMDS egress drop in iptables DOCKER-USER chain..."
-IMDS_IP="169.254.169.254"
-
-# Ensure DOCKER-USER chain exists (Docker creates it, but we prepare it in case Docker isn't running yet)
-iptables -N DOCKER-USER 2>/dev/null || true
-
-if iptables -C DOCKER-USER -d "${IMDS_IP}" -j DROP 2>/dev/null; then
-    log_info "Rule already present in DOCKER-USER chain."
+log_info "Executing container egress lockdown via deploy/block_internal_egress.sh..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/block_internal_egress.sh" ]]; then
+    bash "${SCRIPT_DIR}/block_internal_egress.sh"
+    log_success "Container egress lockdown rules configured and persisted."
 else
-    iptables -I DOCKER-USER -d "${IMDS_IP}" -j DROP
-    log_success "Added DROP rule for Oracle IMDS (${IMDS_IP}) to DOCKER-USER chain."
-fi
-
-# Persist iptables rules across reboots
-if command -v netfilter-persistent >/dev/null 2>&1; then
-    netfilter-persistent save >/dev/null 2>&1 || true
-    log_success "iptables rules persisted via netfilter-persistent."
+    log_warn "deploy/block_internal_egress.sh not found; skipping."
 fi
 
 # ------------------------------------------------------------------------------
