@@ -131,3 +131,31 @@ def test_api_download_rejects_adult_extractor(client):
     data = resp.get_json()
     assert data["success"] is False
     assert "not supported" in data["error"].lower()
+
+
+def test_download_flow_cookie_polling_and_iframe(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    html = resp.text
+
+    # 1. No navigation on download start
+    assert "window.location.assign" not in html
+
+    # 2. No arbitrary 5 second timer
+    assert "5000" not in html[html.find("function executeDownload"):]
+
+    # 3. References download.js and cookie polling
+    assert "js/download.js" in html
+    assert "hasDownloadCookie" in html
+    assert "triggerDownloadFrame" in html
+
+    # 4. Verify static/js/download.js exists and implements pure cookie checks
+    with open("static/js/download.js", "r", encoding="utf-8") as f:
+        js_content = f.read()
+
+    assert "dl_" in js_content
+    assert "parseCookies" in js_content
+    assert "hasDownloadCookie" in js_content
+    assert "clearDownloadCookie" in js_content
+    assert "buildStreamUrl" in js_content
+    assert "triggerDownloadFrame" in js_content

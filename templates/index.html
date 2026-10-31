@@ -582,6 +582,7 @@
     </p>
   </footer>
 
+  <script src="{{ url_for('static', filename='js/download.js') }}"></script>
   <script>
     let currentMediaData = null;
     let currentToken = null;
@@ -879,15 +880,17 @@
       `;
     }
 
-    function executeDownload(btn) {
+    async function executeDownload(btn, isRetry = false) {
       const token = decodeURIComponent(btn.dataset.token || currentToken || '');
       const formatId = decodeURIComponent(btn.dataset.formatId);
       const filename = decodeURIComponent(btn.dataset.filename);
-      const mediaType = btn.dataset.type;
+      const mediaType = btn.dataset.type || 'video';
       const btnId = btn.id;
 
       if (activeDownloads.has(btnId)) return;
       activeDownloads.add(btnId);
+
+      clearError();
 
       const allButtons = document.querySelectorAll('.download-btn');
       allButtons.forEach(b => b.disabled = true);
@@ -901,17 +904,72 @@
       const progressBar = document.getElementById(`progress-${btnId}`);
       if (progressBar) progressBar.classList.remove('hidden');
 
-      const streamUrl = `/api/stream?token=${encodeURIComponent(token)}&format_id=${encodeURIComponent(formatId)}&filename=${encodeURIComponent(filename)}&type=${mediaType}`;
+      const streamUrl = buildStreamUrl(token, formatId, filename, mediaType);
 
-      window.location.assign(streamUrl);
+      // Trigger download via hidden iframe
+      triggerDownloadFrame(streamUrl);
 
-      setTimeout(() => {
+      // Poll document.cookie for dl_<token> every 500ms (timeout 60s)
+      const startTime = Date.now();
+      let probeAttempted = false;
+
+      const resetUi = () => {
         activeDownloads.delete(btnId);
         allButtons.forEach(b => b.disabled = false);
         if (staticIcon) staticIcon.classList.remove('hidden');
         if (spinnerIcon) spinnerIcon.classList.add('hidden');
         if (progressBar) progressBar.classList.add('hidden');
-      }, 5000);
+      };
+
+      const pollTimer = setInterval(async () => {
+        const elapsed = Date.now() - startTime;
+
+        // 1. Success check: cookie detected
+        if (hasDownloadCookie(token)) {
+          clearInterval(pollTimer);
+          clearDownloadCookie(token);
+          resetUi();
+          return;
+        }
+
+        // 2. Early error probe after 3s if cookie has not appeared
+        if (elapsed >= 3000 && !probeAttempted) {
+          probeAttempted = true;
+          try {
+            const probeResp = await fetch(streamUrl, {
+              headers: { 'Range': 'bytes=0-0' }
+            });
+
+            if (!probeResp.ok) {
+              clearInterval(pollTimer);
+              const errData = await probeResp.json().catch(() => ({}));
+
+              if (probeResp.status === 410 && errData.code === 'SESSION_EXPIRED' && !isRetry) {
+                resetUi();
+                const freshTok = await ensureFreshToken();
+                if (freshTok) {
+                  btn.dataset.token = encodeURIComponent(freshTok);
+                  return executeDownload(btn, true);
+                }
+              }
+
+              resetUi();
+              const msg = errData.error || 'Download failed. Please try again.';
+              showErrorWithRetry(msg, () => executeDownload(btn, true));
+              return;
+            }
+          } catch (e) {
+            // Probe network error, continue polling
+          }
+        }
+
+        // 3. Timeout at 60s
+        if (elapsed >= 60000) {
+          clearInterval(pollTimer);
+          resetUi();
+          showErrorWithRetry('Download request timed out. Please retry.', () => executeDownload(btn, true));
+        }
+      }, 500);
     }
 
     function switchTab(targetType) {
@@ -955,6 +1013,27 @@
     function showError(msg) {
       const box = document.getElementById('errorBox');
       box.innerText = msg;
+      box.classList.remove('hidden');
+    }
+
+    function showErrorWithRetry(msg, retryCallback) {
+      const box = document.getElementById('errorBox');
+      box.replaceChildren();
+      const p = document.createElement('p');
+      p.className = 'mb-2';
+      p.textContent = msg;
+      box.appendChild(p);
+
+      if (retryCallback) {
+        const btn = document.createElement('button');
+        btn.className = 'glass-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-white hover:bg-white/20 transition-all';
+        btn.textContent = 'Retry Download';
+        btn.onclick = () => {
+          box.classList.add('hidden');
+          retryCallback();
+        };
+        box.appendChild(btn);
+      }
       box.classList.remove('hidden');
     }
 
