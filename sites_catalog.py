@@ -111,11 +111,30 @@ class SitesCatalog:
 
         try:
             for ie in yt_dlp.extractor.gen_extractors():
+                # Skip broken or explicitly disabled extractors
+                if callable(getattr(ie, "working", None)):
+                    try:
+                        if not ie.working():
+                            continue
+                    except Exception:
+                        pass
+                if getattr(ie, "_ENABLED", True) is False:
+                    continue
+                if getattr(ie, "_WORKING", True) is False:
+                    continue
+
+                # Skip embed/helper extractors without standalone URLs
+                if getattr(ie, "_VALID_URL", None) is False:
+                    continue
+
                 name = ie.IE_NAME
                 base = name.split(":")[0].strip()
                 base_lower = base.lower()
 
-                if not base or base_lower == "generic":
+                if not base or base_lower in ("generic", "generictag", "default", "html5"):
+                    continue
+
+                if base_lower.endswith("search") or name.endswith(":search"):
                     continue
 
                 if not config.ALLOW_ADULT and base_lower in adult_set:
