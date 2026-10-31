@@ -52,6 +52,13 @@ echo "==========================================================================
 # ------------------------------------------------------------------------------
 log_info "Updating apt package index and installing base security tools..."
 export DEBIAN_FRONTEND=noninteractive
+
+# Preseed iptables-persistent to install non-interactively without prompt hang
+if command -v debconf-set-selections >/dev/null 2>&1; then
+    echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | debconf-set-selections
+    echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | debconf-set-selections
+fi
+
 apt-get update -y
 apt-get install -y --no-install-recommends \
     ufw \
@@ -119,8 +126,28 @@ systemctl enable --now unattended-upgrades
 log_success "Unattended security upgrades active."
 
 # ------------------------------------------------------------------------------
-# 5. Fail2ban Configuration for SSH
+# 5. SSH Hardening & Fail2ban
 # ------------------------------------------------------------------------------
+log_info "Configuring SSH hardening drop-in (/etc/ssh/sshd_config.d/99-jungle.conf)..."
+mkdir -p /etc/ssh/sshd_config.d
+cat > /etc/ssh/sshd_config.d/99-jungle.conf << 'EOF'
+PasswordAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+EOF
+
+if command -v sshd >/dev/null 2>&1; then
+    log_info "Validating sshd configuration (sshd -t)..."
+    if sshd -t; then
+        systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true
+        log_success "SSH hardening configuration validated and applied."
+    else
+        log_error "sshd -t validation failed! Reverting 99-jungle.conf to prevent SSH lockout."
+        rm -f /etc/ssh/sshd_config.d/99-jungle.conf
+        exit 1
+    fi
+fi
+
 log_info "Configuring Fail2ban jail for SSH protection..."
 mkdir -p /etc/fail2ban/jail.d
 cat > /etc/fail2ban/jail.d/sshd.local << 'EOF'
@@ -224,9 +251,12 @@ EOF
 fi
 
 if systemctl is-active --quiet docker; then
-    systemctl reload docker 2>/dev/null || true
+    log_info "Restarting Docker daemon to apply daemon.json log options..."
+    systemctl restart docker 2>/dev/null || true
+    log_success "Docker daemon restarted with updated log limits."
+else
+    log_info "Docker daemon is not currently active. New log limits will apply upon startup."
 fi
-log_success "Docker daemon log limits set to 10m max-size, 3 max-file."
 
 # ------------------------------------------------------------------------------
 # 10. Kernel & Network Tuning

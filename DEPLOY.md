@@ -76,6 +76,22 @@ If Mumbai/Hyderabad reports `Out of host capacity` for Ampere A1:
 2. Click **Reserve Public IP Address** (e.g., `jungle-mumbai-ip`).
 3. Associate it with your instance VNIC to ensure your IP does not change on reboot.
 
+### 3.4 Enforce IMDSv2 (Instance Metadata Service v2)
+To mitigate SSRF risks that probe cloud instance metadata endpoints (`169.254.169.254`), enforce IMDSv2 on your compute instance so legacy v1 requests without session tokens are refused:
+
+1. **Via OCI CLI**:
+   ```bash
+   oci compute instance update \
+     --instance-id <YOUR_INSTANCE_OCID> \
+     --are-legacy-imds-endpoints-disabled true
+   ```
+2. **Via OCI Console**:
+   - Go to **Compute** &rarr; **Instances** &rarr; Select your instance.
+   - Click **Edit**.
+   - Expand **Advanced Options** &rarr; **Management**.
+   - Under **Instance Metadata Service**, select **Require numeric headers (IMDSv2 only)**.
+   - Click **Save Changes**.
+
 ---
 
 ## 4. OCI VCN Security List (Firewall)
@@ -300,6 +316,14 @@ Add the following entry (runs weekly on Sunday at 03:00 UTC):
 4. **Browser Test**:
    - Open `https://example.com`
    - Test preview and download of a supported URL
-   - Verify Turnstile challenge completes and sets `cf_clearance` cookie
+   - Verify Turnstile challenge completes and sets `cf_clearance_token` cookie
    - Verify download initiated and completed smoothly.
+
+5. **Origin Lockdown (Cloudflare Only)**:
+   Lock down host and Docker container inbound HTTP/HTTPS ports to accept traffic only from official Cloudflare proxy edges:
+   ```bash
+   sudo bash deploy/cloudflare-ufw.sh
+   # If using MEDIA_HOST direct streaming:
+   # sudo bash deploy/cloudflare-ufw.sh --allow-direct-media
+   ```
 
