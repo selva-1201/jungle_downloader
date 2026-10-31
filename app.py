@@ -7,7 +7,7 @@ from collections import Counter
 import gevent
 from gevent import subprocess as gevent_subprocess
 from urllib.parse import quote
-from flask import Flask, render_template, request, jsonify, Response, redirect, g
+from flask import Flask, render_template, request, jsonify, Response, redirect, g, make_response
 from werkzeug.exceptions import HTTPException
 from flask_limiter import Limiter
 import yt_dlp
@@ -344,18 +344,59 @@ def healthz():
     return jsonify({"status": "ok"}), 200
 
 
+# Centralized public crawlable route registry
+BUILD_LASTMOD = "2026-10-31"
+
+PUBLIC_ROUTES = [
+    {"path": "/", "changefreq": "daily", "priority": "1.0"},
+    {"path": "/supported-sites", "changefreq": "weekly", "priority": "0.8"},
+    {"path": "/terms", "changefreq": "monthly", "priority": "0.5"},
+    {"path": "/privacy", "changefreq": "monthly", "priority": "0.5"},
+]
+
+# Extension point for Phase 4 programmatic landing pages, /dmca, and /contact
+PLATFORM_PAGES = []
+
+
 @app.route('/robots.txt')
 def robots_txt():
-    content = f"User-agent: *\nDisallow: /api/\nAllow: /\n\nSitemap: {config.SITE_URL}/sitemap.xml\n"
+    base = config.SITE_URL.rstrip('/')
+    allow_lines = [f"Allow: {route['path']}" for route in (PUBLIC_ROUTES + PLATFORM_PAGES)]
+    content = (
+        "User-agent: *\n"
+        "Disallow: /api/\n"
+        + "\n".join(allow_lines)
+        + f"\n\nSitemap: {base}/sitemap.xml\n"
+    )
     return Response(content, mimetype="text/plain")
 
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
     base = config.SITE_URL.rstrip('/')
-    urls = ["/", "/terms", "/privacy", "/supported-sites"]
-    xml_items = "\n".join(f"  <url><loc>{base}{u}</loc><changefreq>weekly</changefreq></url>" for u in urls)
-    xml_content = f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{xml_items}\n</urlset>'
+    all_routes = PUBLIC_ROUTES + PLATFORM_PAGES
+    xml_items = []
+    for r in all_routes:
+        path = r["path"]
+        loc = f"{base}{path}" if path != "/" else f"{base}/"
+        freq = r.get("changefreq", "weekly")
+        priority = r.get("priority", "0.8")
+        lastmod = r.get("lastmod", BUILD_LASTMOD)
+        xml_items.append(
+            f"  <url>\n"
+            f"    <loc>{loc}</loc>\n"
+            f"    <lastmod>{lastmod}</lastmod>\n"
+            f"    <changefreq>{freq}</changefreq>\n"
+            f"    <priority>{priority}</priority>\n"
+            f"  </url>"
+        )
+    xml_body = "\n".join(xml_items)
+    xml_content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f'{xml_body}\n'
+        '</urlset>'
+    )
     return Response(xml_content, mimetype="application/xml")
 
 
@@ -417,13 +458,17 @@ def metrics():
 
 @app.errorhandler(404)
 def handle_404(e):
-    return render_template('404.html'), 404
+    resp = make_response(render_template('404.html'), 404)
+    resp.headers['X-Robots-Tag'] = 'noindex'
+    return resp
 
 
 @app.errorhandler(500)
 def handle_500(e):
     logger.exception("Internal server error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
-    return render_template('500.html'), 500
+    resp = make_response(render_template('500.html'), 500)
+    resp.headers['X-Robots-Tag'] = 'noindex'
+    return resp
 
 
 # --- API ROUTES ---
