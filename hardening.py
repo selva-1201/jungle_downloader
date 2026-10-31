@@ -135,23 +135,36 @@ def build_content_disposition(filename: str, ext: str = ".mp4") -> str:
     return f"attachment; filename=\"{ascii_clean}\"; filename*=UTF-8''{utf8_encoded}"
 
 
+BOT_PATTERN = re.compile(
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    re.IGNORECASE,
+)
+
+
 def map_error_message(exc: Exception) -> str:
     """Maps internal exceptions into safe, user-friendly messages without leaking traces."""
     if isinstance(exc, SSRFValidationError):
         return "This URL is not permitted or cannot be processed."
 
-    err_str = str(exc).lower()
+    err_str = str(exc)
+    err_lower = err_str.lower()
 
-    if "too long" in err_str or "duration" in err_str:
+    if "too long" in err_lower or "duration" in err_lower:
         return f"Video too long (maximum allowed is {config.MAX_DURATION_SEC // 60} minutes)."
 
-    if "429" in err_str or "too many requests" in err_str or "bot" in err_str or "sign in" in err_str:
+    if BOT_PATTERN.search(err_str) or "sign in" in err_lower:
         return "Site temporarily blocking us, try again later."
 
-    if "not supported" in err_str or "unsupported" in err_str or "no suitable extractor" in err_str:
+    if "403" in err_lower or "forbidden" in err_lower:
+        return "Access to this media is forbidden or restricted by upstream provider."
+
+    if "404" in err_lower or "not found" in err_lower:
+        return "Media not found on upstream provider."
+
+    if "not supported" in err_lower or "unsupported" in err_lower or "no suitable extractor" in err_lower:
         return "This site is not supported."
 
-    if "private or non-global" in err_str or "blocked" in err_str:
+    if "private or non-global" in err_lower or "blocked" in err_lower:
         return "This site is not supported."
 
     return "Could not process this link. Please verify the URL and try again."

@@ -1,11 +1,17 @@
 import datetime
 import logging
+import re
 import time
 from typing import Any, Dict, Optional, Tuple
 from gevent.lock import BoundedSemaphore
 from config import config
 
 logger = logging.getLogger(__name__)
+
+BOT_PATTERN = re.compile(
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    re.IGNORECASE,
+)
 
 # Dedicated semaphore for YouTube extractions to isolate YouTube bottlenecks
 youtube_extract_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_YOUTUBE)
@@ -123,22 +129,13 @@ class YouTubeCircuitBreaker:
         """
         Called on extraction error.
         Increments counter and trips if bot detection or 429 occurs.
+        Uses word-boundary regex so words like 'both' or 'robot' do not trip.
         """
-        err_lower = (error_message or "").lower()
-        bot_signals = [
-            "sign in to confirm you're not a bot",
-            "bot",
-            "captcha",
-            "429",
-            "too many requests",
-            "blocking us",
-            "automated queries"
-        ]
-
-        if any(sig in err_lower for sig in bot_signals):
+        err_msg = error_message or ""
+        if BOT_PATTERN.search(err_msg):
             self.consecutive_failures += 1
             logger.warning(
-                f"YouTube bot block detected ({self.consecutive_failures}/{self.failure_threshold}): {error_message[:60]}"
+                f"YouTube bot block detected ({self.consecutive_failures}/{self.failure_threshold}): {err_msg[:60]}"
             )
             if self.consecutive_failures >= self.failure_threshold or self.state == self.STATE_HALF_OPEN:
                 self.state = self.STATE_OPEN

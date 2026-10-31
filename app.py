@@ -250,23 +250,50 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
     stream_url = target_format.get('url', '')
     magic_headers = dict(target_format.get('http_headers', {}))
     magic_headers['Connection'] = 'keep-alive'
+    magic_headers['Accept-Encoding'] = 'identity'
     proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
 
     max_bytes = config.MAX_FILESIZE_MB * 1024 * 1024
     r = safe_requests_get(stream_url, headers=magic_headers, stream=True, timeout=60, proxies=proxies)
+    r.raise_for_status()
 
+    encoding = r.headers.get('Content-Encoding', '').lower()
     cl_header = r.headers.get('Content-Length')
-    if cl_header:
+    forward_content_length = None
+
+    if encoding in ('', 'identity') and cl_header:
         try:
             cl = int(cl_header)
             if cl > max_bytes:
                 r.close()
                 raise ValueError(f"File size exceeds maximum allowed limit of {config.MAX_FILESIZE_MB} MB.")
+            forward_content_length = cl_header
         except ValueError as e:
             if "exceeds" in str(e):
                 raise
 
-    content_type = 'audio/mpeg' if media_type == 'audio' else 'video/mp4'
+    # Resolve Content-Type based on format ext / mime to prevent content sniffing
+    fmt_ext = (target_format.get('ext') or '').lower()
+    if media_type == 'audio':
+        if fmt_ext == 'm4a':
+            content_type = 'audio/mp4'
+        elif fmt_ext == 'webm':
+            content_type = 'audio/webm'
+        elif fmt_ext == 'ogg':
+            content_type = 'audio/ogg'
+        elif fmt_ext == 'wav':
+            content_type = 'audio/wav'
+        else:
+            content_type = 'audio/mpeg'
+    else:
+        if fmt_ext == 'webm':
+            content_type = 'video/webm'
+        elif fmt_ext == 'mkv':
+            content_type = 'video/x-matroska'
+        elif fmt_ext in ('mov', 'quicktime'):
+            content_type = 'video/quicktime'
+        else:
+            content_type = 'video/mp4'
 
     def gen():
         start_time = time.time()
@@ -288,7 +315,7 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
         finally:
             r.close()
 
-    return gen(), content_type, r.headers.get('Content-Length')
+    return gen(), content_type, forward_content_length
 
 
 # --- STATIC & LEGAL PAGES ---
@@ -667,7 +694,10 @@ def stream_download():
     token = request.args.get('token')
     format_id = request.args.get('format_id', 'best')
     filename = request.args.get('filename', 'Jungle_Download')
-    media_type = request.args.get('type', 'video')
+    media_type = (request.args.get('type') or 'video').lower()
+
+    if media_type not in ('video', 'audio'):
+        return jsonify({"success": False, "error": "Invalid media type. Must be 'video' or 'audio'."}), 400
 
     if not token:
         return jsonify({
@@ -695,12 +725,14 @@ def stream_download():
 
     formats = info.get('formats', [])
     if format_id == 'auto_extract':
-        target_format = next((f for f in reversed(formats) if f.get('acodec', 'none') != 'none'), formats[-1] if formats else None)
+        target_format = next((f for f in reversed(formats) if f.get('acodec', 'none') != 'none'), None)
+    elif format_id == 'best':
+        target_format = formats[-1] if formats else None
     else:
-        target_format = next((f for f in formats if f.get('format_id') == format_id), formats[-1] if formats else None)
+        target_format = next((f for f in formats if str(f.get('format_id')) == str(format_id)), None)
 
     if not target_format:
-        return jsonify({"success": False, "error": "No valid format found."}), 404
+        return jsonify({"success": False, "error": f"Format '{format_id}' not found."}), 404
 
     extractor_name = info.get('extractor', '')
     g.extractor = extractor_name
@@ -722,8 +754,18 @@ def stream_download():
     # --- 5.1 PROXY STREAMING MODE ---
     fragmented = is_fragmented(target_format)
     has_audio = target_format.get('acodec', 'none') != 'none'
-    ext = '.mp3' if media_type == 'audio' else '.mp4'
-    content_disp = build_content_disposition(filename, ext)
+    needs_ffmpeg = (media_type == 'audio') or fragmented or (media_type == 'video' and not has_audio)
+
+    fmt_ext = (target_format.get('ext') or '').lower()
+    if needs_ffmpeg:
+        file_ext = '.mp3' if media_type == 'audio' else '.mp4'
+    else:
+        if media_type == 'audio':
+            file_ext = f".{fmt_ext}" if fmt_ext in ('m4a', 'webm', 'ogg', 'wav', 'mp3') else '.mp3'
+        else:
+            file_ext = f".{fmt_ext}" if fmt_ext in ('webm', 'mkv', 'mov', 'mp4') else '.mp4'
+
+    content_disp = build_content_disposition(filename, file_ext)
 
     base_headers = {
         'Content-Disposition': content_disp,
@@ -731,7 +773,6 @@ def stream_download():
         'Cache-Control': 'no-cache, no-store, must-revalidate',
     }
 
-    needs_ffmpeg = (media_type == 'audio') or fragmented or (media_type == 'video' and not has_audio)
     active_semaphore = ffmpeg_semaphore if needs_ffmpeg else proxy_semaphore
     proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(extractor_name)
 
@@ -791,6 +832,11 @@ def stream_download():
         release_permit()
         logger.warning("Stream SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
         return jsonify({"success": False, "error": map_error_message(e)}), 400
+    except requests.HTTPError as e:
+        release_permit()
+        logger.warning("Upstream HTTP error in stream: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+        status = e.response.status_code if e.response is not None else 502
+        return jsonify({"success": False, "error": map_error_message(e)}), status if status in (403, 404) else 502
     except ValueError as e:
         release_permit()
         logger.warning("Stream ValueError: %s", e, extra={"request_id": getattr(g, "request_id", None)})
@@ -806,6 +852,10 @@ def stream_download():
 def preview_video():
     token = request.args.get('token')
     format_id = request.args.get('format_id', 'best')
+    media_type = (request.args.get('type') or 'video').lower()
+
+    if media_type not in ('video', 'audio'):
+        return jsonify({"success": False, "error": "Invalid media type. Must be 'video' or 'audio'."}), 400
 
     if not token:
         return jsonify({
@@ -831,10 +881,16 @@ def preview_video():
         }), 410
 
     formats = info.get('formats', [])
-    preview_format = next((f for f in formats if f.get('format_id') == format_id), formats[-1] if formats else None)
+    if format_id == 'auto_extract':
+        preview_format = next((f for f in reversed(formats) if f.get('acodec', 'none') != 'none'), None)
+    elif format_id == 'best':
+        prog = [f for f in formats if f.get('vcodec', 'none') != 'none' and f.get('acodec', 'none') != 'none' and not is_fragmented(f)]
+        preview_format = prog[0] if prog else (formats[-1] if formats else None)
+    else:
+        preview_format = next((f for f in formats if str(f.get('format_id')) == str(format_id)), None)
 
     if not preview_format:
-        return jsonify({"success": False, "error": "Format not found."}), 404
+        return jsonify({"success": False, "error": f"Format '{format_id}' not found."}), 404
 
     is_video = preview_format.get('vcodec', 'none') != 'none'
     has_audio = preview_format.get('acodec', 'none') != 'none'
@@ -876,9 +932,14 @@ def preview_video():
         proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
         try:
             r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30, proxies=proxies)
+            r.raise_for_status()
         except SSRFValidationError as e:
             logger.warning("Preview SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
             return jsonify({"success": False, "error": map_error_message(e)}), 400
+        except requests.HTTPError as e:
+            logger.warning("Upstream preview HTTP error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+            status = e.response.status_code if e.response is not None else 502
+            return jsonify({"success": False, "error": map_error_message(e)}), status if status in (403, 404) else 502
         except Exception as e:
             logger.exception("Preview stream failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
             return jsonify({"success": False, "error": map_error_message(e)}), 500
