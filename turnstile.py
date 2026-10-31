@@ -13,20 +13,27 @@ TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverif
 COOKIE_NAME = "jungle_cf_clearance"
 COOKIE_MAX_AGE = 900  # 15 minutes
 
-# Secret for HMAC signing cookies (uses TURNSTILE_SECRET or fallback environment key)
-SECRET_KEY = (config.TURNSTILE_SECRET or os.getenv("SECRET_KEY", "jungle-default-secret-change-in-prod")).encode("utf-8")
+def _get_secret_key() -> bytes:
+    key = config.SECRET_KEY or os.getenv("SECRET_KEY", "")
+    if config.ENV in ("prod", "production") and not key:
+        raise ValueError("SECRET_KEY environment variable is required in production.")
+    if not key:
+        key = "jungle-default-secret-change-in-prod"
+    return key.encode("utf-8")
 
 
 def generate_clearance_token(client_ip: str) -> str:
     """Generates a signed HMAC clearance token bound to timestamp and client IP."""
+    secret = _get_secret_key()
     ts = str(int(time.time()))
     payload = f"{client_ip}:{ts}".encode("utf-8")
-    sig = hmac.new(SECRET_KEY, payload, hashlib.sha256).hexdigest()
+    sig = hmac.new(secret, payload, hashlib.sha256).hexdigest()
     return f"{ts}.{sig}"
 
 
 def verify_clearance_token(token: str, client_ip: str, max_age: int = COOKIE_MAX_AGE) -> bool:
     """Verifies that an HMAC clearance token is authentic, unexpired, and IP-bound."""
+    secret = _get_secret_key()
     if not token or "." not in token:
         return False
     try:
@@ -36,7 +43,7 @@ def verify_clearance_token(token: str, client_ip: str, max_age: int = COOKIE_MAX
         if now - ts > max_age or ts > now + 60:
             return False  # Expired or from future
         payload = f"{client_ip}:{ts_str}".encode("utf-8")
-        expected_sig = hmac.new(SECRET_KEY, payload, hashlib.sha256).hexdigest()
+        expected_sig = hmac.new(secret, payload, hashlib.sha256).hexdigest()
         return hmac.compare_digest(sig, expected_sig)
     except Exception:
         return False

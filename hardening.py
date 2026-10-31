@@ -170,9 +170,10 @@ def apply_security_headers(response: Response) -> Response:
         h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # CSP in Report-Only mode
+    extra_scripts = (" " + " ".join(config.CSP_EXTRA_SCRIPT_SRC)) if config.CSP_EXTRA_SCRIPT_SRC else ""
     h["Content-Security-Policy-Report-Only"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https:; "
+        f"script-src 'self' 'unsafe-inline' https:{extra_scripts}; "
         "style-src 'self' 'unsafe-inline' https:; "
         "img-src 'self' data: https:; "
         "media-src 'self' blob: https:; "

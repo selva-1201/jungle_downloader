@@ -65,6 +65,9 @@
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  {% if turnstile_site_key %}
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+  {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -289,6 +292,12 @@
         </span>
       </button>
     </div>
+
+    {% if turnstile_site_key %}
+    <div id="turnstileWrapper" class="flex justify-center mb-6">
+      <div id="cf-turnstile" class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark"></div>
+    </div>
+    {% endif %}
 
     <div id="errorBox"
       class="hidden glass-panel border-red-500/30 text-red-300 p-4 rounded-xl mb-6 text-center text-sm"></div>
@@ -579,16 +588,38 @@
     let activeDownloads = new Set();
     let isRefreshingToken = false;
 
+    function getTurnstileToken() {
+      if (typeof turnstile !== 'undefined' && turnstile.getResponse) {
+        return turnstile.getResponse() || '';
+      }
+      return '';
+    }
+
+    function resetTurnstile() {
+      if (typeof turnstile !== 'undefined' && turnstile.reset) {
+        try {
+          turnstile.reset();
+        } catch (e) {
+          console.warn('Failed to reset Turnstile', e);
+        }
+      }
+    }
+
     async function ensureFreshToken() {
       if (isRefreshingToken) return null;
       isRefreshingToken = true;
       try {
         const inputUrl = (currentMediaData && currentMediaData.original_url) || document.getElementById('videoUrl').value.trim();
         if (!inputUrl) return null;
+        const payload = { url: inputUrl };
+        const turnstileToken = getTurnstileToken();
+        if (turnstileToken) {
+          payload.turnstile_token = turnstileToken;
+        }
         const response = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: inputUrl })
+          body: JSON.stringify(payload)
         });
         const data = await response.json();
         if (data.success && data.token) {
@@ -648,7 +679,7 @@
       return `${m}:${String(sec).padStart(2, '0')}`;
     }
 
-    async function fetchMedia() {
+    async function fetchMedia(isRetry = false) {
       const urlInput = document.getElementById('videoUrl').value.trim();
       if (!urlInput) return;
 
@@ -682,13 +713,25 @@
       loaderNode.classList.add('flex');
 
       try {
+        const payload = { url: urlInput };
+        const turnstileToken = getTurnstileToken();
+        if (turnstileToken) {
+          payload.turnstile_token = turnstileToken;
+        }
+
         const response = await fetch('/api/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: urlInput })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
+
+        if (response.status === 403 && data.code === 'BOT_CHALLENGE_REQUIRED' && !isRetry) {
+          resetTurnstile();
+          await new Promise(r => setTimeout(r, 1200));
+          return await fetchMedia(true);
+        }
 
         loaderState.classList.add('hidden');
         loaderState.classList.remove('flex');

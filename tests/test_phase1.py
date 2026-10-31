@@ -317,6 +317,72 @@ def test_turnstile_dev_mode_skips_verification():
     assert verify_turnstile_response(None, "127.0.0.1") is True
 
 
+def test_turnstile_missing_secret_key_in_prod_raises(mocker):
+    mocker.patch.object(config, "ENV", "prod")
+    mocker.patch.object(config, "SECRET_KEY", "")
+    mocker.patch.dict("os.environ", {"SECRET_KEY": ""})
+
+    with pytest.raises(ValueError, match="SECRET_KEY environment variable is required"):
+        generate_clearance_token("198.51.100.1")
+
+    with pytest.raises(ValueError, match="SECRET_KEY environment variable is required"):
+        verify_clearance_token("123.sig", "198.51.100.1")
+
+
+def test_turnstile_clearance_cookie_flags(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "TURNSTILE_SECRET", "test-secret")
+    mocker.patch("app.verify_turnstile_response", return_value=True)
+    mocker.patch("app.fetch_fresh_metadata", return_value={"formats": [], "title": "Test"})
+
+    # 1. Dev environment: cookie is HttpOnly, Lax, but NOT Secure
+    mocker.patch.object(config, "ENV", "dev")
+    resp_dev = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp_dev.status_code == 200
+    cookie_header_dev = resp_dev.headers.get("Set-Cookie", "")
+    assert "cf_clearance_token=" in cookie_header_dev
+    assert "HttpOnly" in cookie_header_dev
+    assert "SameSite=Lax" in cookie_header_dev
+    assert "Secure" not in cookie_header_dev
+
+    # 2. Prod environment: cookie MUST have Secure
+    mocker.patch.object(config, "ENV", "prod")
+    mocker.patch.object(config, "SECRET_KEY", "prod-secret-key-123456789")
+    resp_prod = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp_prod.status_code == 200
+    cookie_header_prod = resp_prod.headers.get("Set-Cookie", "")
+    assert "cf_clearance_token=" in cookie_header_prod
+    assert "Secure" in cookie_header_prod
+    assert "HttpOnly" in cookie_header_prod
+
+
+def test_turnstile_template_rendering(client, mocker):
+    # Without turnstile site key
+    mocker.patch.object(config, "TURNSTILE_SITE_KEY", "")
+    resp_empty = client.get("/")
+    assert resp_empty.status_code == 200
+    assert "challenges.cloudflare.com/turnstile" not in resp_empty.text
+    assert "cf-turnstile" not in resp_empty.text
+
+    # With turnstile site key
+    mocker.patch.object(config, "TURNSTILE_SITE_KEY", "1x00000000000000000000AA")
+    resp_key = client.get("/")
+    assert resp_key.status_code == 200
+    assert "challenges.cloudflare.com/turnstile/v0/api.js" in resp_key.text
+    assert "cf-turnstile" in resp_key.text
+    assert "1x00000000000000000000AA" in resp_key.text
+
+
+def test_turnstile_403_bot_challenge_required_path(client, mocker):
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch.object(config, "TURNSTILE_SECRET", "test-secret")
+
+    resp = client.post("/api/download", json={"url": "https://vimeo.com/123456"})
+    assert resp.status_code == 403
+    data = resp.get_json()
+    assert data["code"] == "BOT_CHALLENGE_REQUIRED"
+
+
 # --- 1.4 SITES API & ETAG CACHING ---
 def test_api_sites_endpoint_and_etag(client):
     resp = client.get("/api/sites")

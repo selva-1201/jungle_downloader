@@ -252,7 +252,7 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
 # --- STATIC & LEGAL PAGES ---
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', turnstile_site_key=config.TURNSTILE_SITE_KEY)
 
 
 @app.route('/healthz')
@@ -569,7 +569,8 @@ def download_video():
 
         if config.TURNSTILE_SECRET:
             clearance_tok = generate_clearance_token(client_ip)
-            resp.set_cookie("cf_clearance_token", clearance_tok, max_age=900, httponly=True, samesite="Lax")
+            is_secure = config.ENV in ("prod", "production")
+            resp.set_cookie("cf_clearance_token", clearance_tok, max_age=900, httponly=True, samesite="Lax", secure=is_secure)
 
         return resp
 

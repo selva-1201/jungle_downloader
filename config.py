@@ -87,6 +87,10 @@ class AppConfig:
 
     TURNSTILE_SITE_KEY: str = field(default_factory=lambda: os.getenv("TURNSTILE_SITE_KEY", ""))
     TURNSTILE_SECRET: str = field(default_factory=lambda: os.getenv("TURNSTILE_SECRET", ""))
+    SECRET_KEY: str = field(default_factory=lambda: os.getenv("SECRET_KEY", ""))
+    CSP_EXTRA_SCRIPT_SRC: List[str] = field(
+        default_factory=lambda: _get_list("CSP_EXTRA_SCRIPT_SRC", ["https://challenges.cloudflare.com"])
+    )
 
     TRUST_CLOUDFLARE_IP: bool = field(default_factory=lambda: _get_bool("TRUST_CLOUDFLARE_IP", True))
     TRUSTED_PROXY_CIDRS: List[str] = field(
