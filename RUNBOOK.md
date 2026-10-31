@@ -96,6 +96,13 @@ Operational procedures, incident response workflows, and maintenance runbooks fo
 4. **Inspect `/tmp` tmpfs**:
    The `app` container mounts `/tmp` as a `512MB` tmpfs in memory. No persistent disk writes occur during media streaming.
 
+5. **Automated Resource Monitoring (Cron)**:
+   A lightweight resource watchdog script is provided in `scripts/disk_ram_alert.sh`. Set up a cron job to monitor disk and RAM usage and deliver instant Telegram alerts if usage exceeds thresholds (default: Disk >= 85%, RAM >= 90%):
+   ```bash
+   # Add to crontab (runs every 5 minutes):
+   */5 * * * * /opt/jungle_downloader/scripts/disk_ram_alert.sh >> /var/log/jungle_resource.log 2>&1
+   ```
+
 ---
 
 ## 4. Incident: High Memory / Bandwidth Saturation

@@ -2,15 +2,24 @@ import logging
 import os
 import subprocess
 import time
+import uuid
+from collections import Counter
 import gevent
 from gevent import subprocess as gevent_subprocess
 from urllib.parse import quote
-from flask import Flask, render_template, request, jsonify, Response, redirect
+from flask import Flask, render_template, request, jsonify, Response, redirect, g
+from werkzeug.exceptions import HTTPException
 from flask_limiter import Limiter
 import yt_dlp
 import requests
 
 from config import config
+from logging_setup import setup_logging, mask_token
+
+setup_logging(config.LOG_LEVEL)
+logger = logging.getLogger("jungle.app")
+access_logger = logging.getLogger("jungle.access")
+extractor_counters = Counter()
 from security import (
     validate_public_url,
     SSRFValidationError,
@@ -81,8 +90,41 @@ def ratelimit_exceeded(e):
     return resp
 
 
+@app.before_request
+def before_request_hook():
+    g.request_start_time = time.time()
+    req_id = request.headers.get("X-Request-ID")
+    if req_id and len(req_id) <= 64 and req_id.replace("-", "").isalnum():
+        g.request_id = req_id
+    else:
+        g.request_id = uuid.uuid4().hex[:12]
+
+
 @app.after_request
 def after_request_handler(response: Response) -> Response:
+    req_id = getattr(g, "request_id", None)
+    if req_id:
+        response.headers["X-Request-ID"] = req_id
+
+    start_time = getattr(g, "request_start_time", None)
+    duration_ms = round((time.time() - start_time) * 1000, 2) if start_time else 0.0
+
+    clean_path = mask_token(request.full_path.rstrip("?"))
+    client_ip = get_real_client_ip(request)
+    extractor = getattr(g, "extractor", None)
+
+    access_logger.info(
+        f"{request.method} {clean_path} -> {response.status_code} ({duration_ms}ms)",
+        extra={
+            "request_id": req_id,
+            "method": request.method,
+            "path": clean_path,
+            "status": response.status_code,
+            "duration_ms": duration_ms,
+            "client_ip": client_ip,
+            "extractor": extractor,
+        }
+    )
     return apply_security_headers(response)
 
 
@@ -341,7 +383,9 @@ def metrics():
     remote = request.remote_addr or "127.0.0.1"
     if remote not in ("127.0.0.1", "::1", "localhost") and client_ip not in ("127.0.0.1", "::1", "localhost"):
         return jsonify({"error": "Unauthorized"}), 403
-    return jsonify(proxy_router.get_metrics_snapshot())
+    snapshot = proxy_router.get_metrics_snapshot()
+    snapshot["extractors"] = dict(extractor_counters)
+    return jsonify(snapshot)
 
 
 @app.errorhandler(404)
@@ -351,6 +395,7 @@ def handle_404(e):
 
 @app.errorhandler(500)
 def handle_500(e):
+    logger.exception("Internal server error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
     return render_template('500.html'), 500
 
 
@@ -387,12 +432,19 @@ def download_video():
     try:
         validate_public_url(video_url)
     except SSRFValidationError as e:
+        logger.warning(
+            "SSRF validation blocked URL: %s",
+            e,
+            extra={"request_id": getattr(g, "request_id", None)}
+        )
         return jsonify({
             'success': False,
             'error': map_error_message(e)
         }), 400
 
     extractor_name = blocklist_mgr.find_extractor_name(video_url) or "generic"
+    g.extractor = extractor_name
+    extractor_counters[extractor_name] += 1
     is_youtube = ("youtube" in video_url.lower()) or (extractor_name.lower().startswith("youtube"))
 
     # YT_MODE checks
@@ -589,6 +641,12 @@ def download_video():
         return resp
 
     except Exception as e:
+        logger.exception(
+            "Download extraction failed for extractor %s: %s",
+            extractor_name,
+            e,
+            extra={"request_id": getattr(g, "request_id", None), "extractor": extractor_name}
+        )
         proxy_router.record_result(extractor_name, success=False, error=str(e))
         if is_youtube:
             youtube_circuit_breaker.record_failure(str(e))
@@ -645,6 +703,8 @@ def stream_download():
         return jsonify({"success": False, "error": "No valid format found."}), 404
 
     extractor_name = info.get('extractor', '')
+    g.extractor = extractor_name
+    extractor_counters[extractor_name] += 1
 
     # --- 5.1 DIRECT LINK MODE CHECK ---
     if is_direct_cdn_eligible(target_format, extractor_name):
@@ -729,12 +789,15 @@ def stream_download():
 
     except SSRFValidationError as e:
         release_permit()
+        logger.warning("Stream SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
         return jsonify({"success": False, "error": map_error_message(e)}), 400
     except ValueError as e:
         release_permit()
-        return jsonify({"success": False, "error": str(e)}), 400
-    except Exception:
+        logger.warning("Stream ValueError: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+        return jsonify({"success": False, "error": map_error_message(e)}), 400
+    except Exception as e:
         release_permit()
+        logger.exception("Stream processing error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
         raise
 
 
@@ -776,7 +839,10 @@ def preview_video():
     is_video = preview_format.get('vcodec', 'none') != 'none'
     has_audio = preview_format.get('acodec', 'none') != 'none'
     fragmented = is_fragmented(preview_format)
-    proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(info.get('extractor', ''))
+    extractor_name = info.get('extractor', 'generic')
+    g.extractor = extractor_name
+    extractor_counters[extractor_name] += 1
+    proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(extractor_name)
 
     if is_video and not has_audio:
         best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
@@ -811,7 +877,11 @@ def preview_video():
         try:
             r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30, proxies=proxies)
         except SSRFValidationError as e:
+            logger.warning("Preview SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
             return jsonify({"success": False, "error": map_error_message(e)}), 400
+        except Exception as e:
+            logger.exception("Preview stream failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+            return jsonify({"success": False, "error": map_error_message(e)}), 500
 
         response_headers = {
             'Content-Type': 'video/mp4' if is_video else 'audio/mpeg',
