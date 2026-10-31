@@ -131,6 +131,14 @@ class BlocklistManager:
             self._url_extractor_cache[clean_url] = None
         return None
 
+    def is_adult_extractor(self, extractor_name: str) -> bool:
+        """Checks if extractor name belongs to adult extractors list."""
+        if not extractor_name:
+            return False
+        self.reload_if_modified()
+        lower = extractor_name.lower().split(":")[0]
+        return lower in self._adult_extractors or extractor_name.lower() in self._adult_extractors
+
     def is_url_blocked(self, url: str, allow_adult: Optional[bool] = None) -> Tuple[bool, str]:
         """
         Evaluates whether a given URL is permitted.

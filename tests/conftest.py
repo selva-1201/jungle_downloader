@@ -6,6 +6,7 @@ from app import app, limiter
 import concurrency
 import delivery
 from config import config
+from cache_store import cache_store
 
 
 @pytest.fixture(autouse=True)
@@ -42,10 +43,16 @@ def reset_limiter_and_semaphores():
     delivery.youtube_circuit_breaker.failures = 0
     delivery.youtube_circuit_breaker.last_failure_time = 0
     delivery.proxy_router.site_backoffs.clear()
+    delivery.proxy_router.daily_bytes_used = 0
+    with cache_store._lock:
+        cache_store._memory_cache.clear()
 
     yield
 
     delivery.proxy_router.site_backoffs.clear()
+    delivery.proxy_router.daily_bytes_used = 0
+    with cache_store._lock:
+        cache_store._memory_cache.clear()
 
     # Clean up after test
     try:

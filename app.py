@@ -443,10 +443,9 @@ def api_sites():
 
 @app.route('/metrics')
 def metrics():
-    # Restricted to localhost
-    client_ip = get_real_client_ip(request)
-    remote = request.remote_addr or "127.0.0.1"
-    if remote not in ("127.0.0.1", "::1", "localhost") and client_ip not in ("127.0.0.1", "::1", "localhost"):
+    # Restricted strictly to local peer (ignore any forwarded headers)
+    peer = request.remote_addr
+    if peer not in ("127.0.0.1", "::1"):
         return jsonify({"error": "Unauthorized"}), 403
     snapshot = proxy_router.get_metrics_snapshot()
     snapshot["extractors"] = dict(extractor_counters)
@@ -764,6 +763,10 @@ def stream_download():
             "error": "Download session expired. Please search again."
         }), 410
 
+    extractor_name = info.get('extractor', '')
+    if not config.ALLOW_ADULT and blocklist_manager.is_adult_extractor(extractor_name):
+        return jsonify({"success": False, "error": "This site is not supported."}), 400
+
     formats = info.get('formats', [])
     if format_id == 'auto_extract':
         target_format = next((f for f in reversed(formats) if f.get('acodec', 'none') != 'none'), None)
@@ -920,6 +923,10 @@ def preview_video():
             "code": "SESSION_EXPIRED",
             "error": "Preview session expired. Please search again."
         }), 410
+
+    extractor_name = info.get('extractor', '')
+    if not config.ALLOW_ADULT and blocklist_manager.is_adult_extractor(extractor_name):
+        return jsonify({"success": False, "error": "This site is not supported."}), 400
 
     formats = info.get('formats', [])
     if format_id == 'auto_extract':
