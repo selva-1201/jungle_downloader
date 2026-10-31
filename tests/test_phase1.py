@@ -1,0 +1,200 @@
+import time
+import pytest
+import yt_dlp
+from app import app
+from cache_store import cache_store
+from concurrency import extract_semaphore, ffmpeg_semaphore
+from config import config
+from turnstile import generate_clearance_token, verify_clearance_token, verify_turnstile_response
+
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
+
+# --- 1.1 CACHE & TOKEN TESTS ---
+def test_cache_store_put_and_get():
+    fake_info = {"id": "12345", "title": "Test Video", "formats": []}
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    assert token is not None
+    assert len(token) > 16
+
+    cached = cache_store.get_metadata(token)
+    assert cached is not None
+    assert cached["info"]["title"] == "Test Video"
+    assert cached["original_url"] == "https://example.com/video"
+
+    # Missing token lookup
+    assert cache_store.get_metadata("non-existent-token") is None
+
+
+def test_preview_and_stream_session_expired_410(client):
+    # Preview with invalid/expired token returns 410 Gone
+    resp_prev = client.get("/api/preview?token=expired_token_123&format_id=best")
+    assert resp_prev.status_code == 410
+    data_prev = resp_prev.get_json()
+    assert data_prev["success"] is False
+    assert data_prev["code"] == "SESSION_EXPIRED"
+
+    # Stream with invalid/expired token returns 410 Gone
+    resp_stream = client.get("/api/stream?token=expired_token_123&format_id=best")
+    assert resp_stream.status_code == 410
+    data_stream = resp_stream.get_json()
+    assert data_stream["success"] is False
+    assert data_stream["code"] == "SESSION_EXPIRED"
+
+
+def test_api_download_generates_token_and_caches_info(client, mocker):
+    mock_info = {
+        "id": "vid123",
+        "title": "Sample Jungle Clip",
+        "thumbnail": "https://example.com/thumb.jpg",
+        "duration": 120,
+        "formats": [
+            {
+                "format_id": "18",
+                "vcodec": "avc1",
+                "acodec": "mp4a",
+                "height": 360,
+                "url": "https://example.com/stream.mp4",
+                "protocol": "https"
+            }
+        ]
+    }
+    # Mock yt_dlp extraction
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value=mock_info)
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=sample"})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert "token" in data
+    assert data["title"] == "Sample Jungle Clip"
+
+    # Verify cached under the token
+    cached = cache_store.get_metadata(data["token"])
+    assert cached is not None
+    assert cached["info"]["id"] == "vid123"
+
+
+# --- 1.2 CONCURRENCY TESTS ---
+def test_extract_semaphore_saturation_returns_503(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={"id": "test", "formats": []})
+    mocker.patch("app.validate_public_url", return_value=True)
+    mock_sem = mocker.patch("app.extract_semaphore")
+    mock_sem.acquire.return_value = False
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=busy"})
+    assert resp.status_code == 503
+    assert resp.headers.get("Retry-After") == "30"
+    data = resp.get_json()
+    assert "Server busy" in data["error"]
+
+
+def test_ffmpeg_semaphore_saturation_returns_503(client, mocker):
+    fake_info = {
+        "id": "stream123",
+        "title": "Stream Video",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/video.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mock_sem = mocker.patch("app.ffmpeg_semaphore")
+    mock_sem.acquire.return_value = False
+
+    resp = client.get(f"/api/stream?token={token}&format_id=18")
+    assert resp.status_code == 503
+    assert resp.headers.get("Retry-After") == "30"
+    data = resp.get_json()
+    assert "Server busy" in data["error"]
+
+
+def test_video_too_long_rejected(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "long123",
+        "title": "Too Long Video",
+        "duration": config.MAX_DURATION_SEC + 100,
+        "formats": []
+    })
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=toolong"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["success"] is False
+    assert "too long" in data["error"].lower()
+
+
+# --- 1.3 BOT PROTECTION & TURNSTILE TESTS ---
+def test_turnstile_clearance_token_validation():
+    client_ip = "198.51.100.1"
+    token = generate_clearance_token(client_ip)
+    assert verify_clearance_token(token, client_ip) is True
+    assert verify_clearance_token(token, "203.0.113.5") is False  # IP mismatch
+    assert verify_clearance_token("invalid.token", client_ip) is False
+
+
+def test_turnstile_dev_mode_skips_verification():
+    # When TURNSTILE_SECRET is unset, verify_turnstile_response returns True
+    assert verify_turnstile_response(None, "127.0.0.1") is True
+
+
+# --- 1.4 SITES API & ETAG CACHING ---
+def test_api_sites_endpoint_and_etag(client):
+    resp = client.get("/api/sites")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert "popular" in data
+    assert "sites" in data
+    assert "display_count" in data
+    assert len(data["popular"]) > 10
+    assert len(data["sites"]) > 100
+
+    # Test ETag caching
+    etag = resp.headers.get("ETag")
+    assert etag is not None
+    resp_cached = client.get("/api/sites", headers={"If-None-Match": etag})
+    assert resp_cached.status_code == 304
+
+
+# --- 1.5 STREAM COOKIE FOR DOWNLOAD DETECTION ---
+def test_stream_sets_download_cookie(client, mocker):
+    fake_info = {
+        "id": "stream123",
+        "title": "Stream Video",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/video.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mocker.patch("app.validate_public_url", return_value=True)
+    mocker.patch("app.stream_via_direct_url", return_value=(iter([b"data"]), "video/mp4", 4))
+
+    resp = client.get(f"/api/stream?token={token}&format_id=18")
+    assert resp.status_code == 200
+    set_cookie = resp.headers.get("Set-Cookie", "")
+    assert f"dl_{token}=1" in set_cookie
+
+
+def test_rate_limiter_exceeded_returns_429(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={"id": "test", "formats": []})
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    test_ip = "198.51.100.99"
+    responses = []
+    # 10 requests allowed per minute; 11th triggers 429
+    for i in range(12):
+        r = client.post(
+            "/api/download",
+            json={"url": f"https://www.youtube.com/watch?v=sample{i}"},
+            environ_base={"REMOTE_ADDR": test_ip}
+        )
+        responses.append(r)
+
+    statuses = [r.status_code for r in responses]
+    assert 429 in statuses
+    r_429 = next(r for r in responses if r.status_code == 429)
+    data = r_429.get_json()
+    assert data["success"] is False
+    assert data["code"] == "RATE_LIMIT_EXCEEDED"
