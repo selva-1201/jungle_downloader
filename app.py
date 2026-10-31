@@ -13,6 +13,8 @@ from security import (
     SSRFValidationError,
     build_safe_ffmpeg_args,
     get_safe_ytdlp_opts,
+    safe_requests_get,
+    validate_extracted_urls,
 )
 from blocklist import BlocklistManager
 from hardening import (
@@ -121,19 +123,28 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
     CHUNK_SIZE = 1024 * 1024
     v_url = video_fmt.get('url') if video_fmt else None
     a_url = audio_fmt.get('url') if audio_fmt else None
-    headers = dict(video_fmt.get('http_headers', {})) if video_fmt else {}
+    v_headers = dict(video_fmt.get('http_headers', {})) if video_fmt else {}
+    a_headers = dict(audio_fmt.get('http_headers', {})) if audio_fmt else {}
+
+    target_video_url = v_url or a_url or ""
+    target_audio_url = a_url if not is_audio_only else None
 
     ff_cmd = build_safe_ffmpeg_args(
-        video_url=v_url or a_url or "",
-        audio_url=a_url if not is_audio_only else None,
+        video_url=target_video_url,
+        audio_url=target_audio_url,
         is_audio_only=is_audio_only,
         max_duration=config.MAX_DURATION_SEC,
-        headers_dict=headers
+        headers_dict=v_headers,
+        audio_headers_dict=a_headers
     )
 
     content_type = 'audio/mpeg' if is_audio_only else 'video/mp4'
 
     def gen():
+        if target_video_url:
+            validate_public_url(target_video_url)
+        if target_audio_url:
+            validate_public_url(target_audio_url)
         proc = subprocess.Popen(ff_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             while True:
@@ -159,7 +170,7 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
     magic_headers['Connection'] = 'keep-alive'
     proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
 
-    r = requests.get(stream_url, headers=magic_headers, stream=True, timeout=60, proxies=proxies)
+    r = safe_requests_get(stream_url, headers=magic_headers, stream=True, timeout=60, proxies=proxies)
     content_type = 'audio/mpeg' if media_type == 'audio' else 'video/mp4'
 
     def gen():
@@ -347,6 +358,7 @@ def download_video():
             }), 429
 
         info = fetch_fresh_metadata(video_url)
+        info = validate_extracted_urls(info)
         proxy_router.record_result(extractor_name, success=True)
         if is_youtube:
             youtube_circuit_breaker.record_success()
@@ -666,7 +678,7 @@ def preview_video():
         if range_header:
             headers['Range'] = range_header
 
-        r = requests.get(stream_url, headers=headers, stream=True, timeout=30)
+        r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30)
 
         response_headers = {
             'Content-Type': 'video/mp4' if is_video else 'audio/mpeg',

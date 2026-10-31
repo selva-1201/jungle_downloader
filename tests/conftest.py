@@ -31,6 +31,13 @@ def reset_limiter_and_semaphores():
     delivery.youtube_extract_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_YOUTUBE)
     app.youtube_extract_semaphore = delivery.youtube_extract_semaphore
 
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
     delivery.youtube_circuit_breaker.failures = 0
     delivery.youtube_circuit_breaker.last_failure_time = 0
 
@@ -55,3 +62,10 @@ def reset_limiter_and_semaphores():
 
     delivery.youtube_extract_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_YOUTUBE)
     app.youtube_extract_semaphore = delivery.youtube_extract_semaphore
+
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client

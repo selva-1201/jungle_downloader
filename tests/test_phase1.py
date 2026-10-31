@@ -76,10 +76,13 @@ def test_preview_allows_over_ten_requests_per_minute(client, mocker):
         }]
     }
     token = cache_store.store_metadata(fake_info, "https://example.com/video")
-    mocker.patch("requests.get", return_value=mocker.MagicMock(
+    mock_resp = mocker.MagicMock(
         headers={},
+        is_redirect=False,
+        status_code=200,
         iter_content=lambda chunk_size: iter([b"fake-bytes"])
-    ))
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp)
 
     # Send 15 requests in a row - none should be rate limited (rate limit is 120/min)
     for _ in range(15):
