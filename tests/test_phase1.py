@@ -1,3 +1,4 @@
+import socket
 import time
 import pytest
 import yt_dlp
@@ -188,6 +189,118 @@ def test_video_too_long_rejected(client, mocker):
     data = resp.get_json()
     assert data["success"] is False
     assert "too long" in data["error"].lower()
+
+
+def test_live_stream_rejected(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "live1",
+        "title": "Live Broadcast",
+        "is_live": True,
+        "formats": []
+    })
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=live1"})
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "Live streams" in data["error"]
+
+    # Also test upcoming broadcast
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "live2",
+        "title": "Upcoming Stream",
+        "live_status": "is_upcoming",
+        "formats": []
+    })
+    resp2 = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=live2"})
+    assert resp2.status_code == 400
+    assert "Live streams" in resp2.get_json()["error"]
+
+
+def test_oversized_filesize_dropped_from_options(client, mocker):
+    max_b = config.MAX_FILESIZE_MB * 1024 * 1024
+    mocker.patch("socket.getaddrinfo", return_value=[
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
+    ])
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={
+        "id": "size123",
+        "title": "Size Test",
+        "duration": 60,
+        "formats": [
+            {
+                "format_id": "ok_fmt",
+                "vcodec": "avc1",
+                "acodec": "mp4a",
+                "height": 720,
+                "filesize": 50 * 1024 * 1024,
+                "url": "https://example.com/ok.mp4",
+                "protocol": "https"
+            },
+            {
+                "format_id": "huge_fmt",
+                "vcodec": "avc1",
+                "acodec": "mp4a",
+                "height": 1080,
+                "filesize": max_b + (10 * 1024 * 1024),
+                "url": "https://example.com/huge.mp4",
+                "protocol": "https"
+            }
+        ]
+    })
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.post("/api/download", json={"url": "https://www.youtube.com/watch?v=size123"})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    video_fmt_ids = [v["format_id"] for v in data["video_formats"]]
+    assert "ok_fmt" in video_fmt_ids
+    assert "huge_fmt" not in video_fmt_ids
+
+
+def test_generator_aborts_at_byte_cap(mocker):
+    from app import stream_via_direct_url
+    max_b = config.MAX_FILESIZE_MB * 1024 * 1024
+
+    # 1. Content-Length header exceeding cap raises ValueError immediately
+    mock_resp_huge = mocker.MagicMock(
+        headers={"Content-Length": str(max_b + 1000)},
+        close=mocker.MagicMock()
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp_huge)
+    with pytest.raises(ValueError, match="exceeds maximum allowed limit"):
+        stream_via_direct_url({"url": "https://example.com/huge.mp4"}, "video")
+
+    # 2. Generator aborts when yielded bytes exceed cap
+    chunk_1mb = b"x" * (1024 * 1024)
+    # Return more chunks than MAX_FILESIZE_MB
+    chunks = [chunk_1mb] * (config.MAX_FILESIZE_MB + 5)
+    mock_resp_stream = mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter(chunks),
+        close=mocker.MagicMock()
+    )
+    mocker.patch("app.safe_requests_get", return_value=mock_resp_stream)
+    gen, ctype, clen = stream_via_direct_url({"url": "https://example.com/stream.mp4"}, "video")
+    yielded_chunks = list(gen)
+    total_yielded_bytes = sum(len(c) for c in yielded_chunks)
+    assert total_yielded_bytes <= max_b
+
+
+def test_watchdog_kills_hanging_fake_process(mocker):
+    import gevent
+    mock_proc = mocker.MagicMock()
+    mock_proc.poll.return_value = None
+
+    def watchdog(p, timeout_sec):
+        gevent.sleep(timeout_sec)
+        if p.poll() is None:
+            p.kill()
+
+    # Run watchdog with tiny timeout
+    g = gevent.spawn(watchdog, mock_proc, 0.05)
+    gevent.sleep(0.1)
+    assert mock_proc.kill.called
+    assert mock_proc.kill.called
 
 
 # --- 1.3 BOT PROTECTION & TURNSTILE TESTS ---

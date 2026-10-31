@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import time
 import gevent
 from gevent import subprocess as gevent_subprocess
 from urllib.parse import quote
@@ -163,6 +164,16 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
         else:
             proc = gevent_subprocess.Popen(ff_cmd, stdout=gevent_subprocess.PIPE, stderr=gevent_subprocess.DEVNULL)
 
+        def watchdog(p, timeout_sec):
+            gevent.sleep(timeout_sec)
+            if p.poll() is None:
+                try:
+                    p.kill()
+                except Exception:
+                    pass
+
+        watchdog_greenlet = gevent.spawn(watchdog, proc, config.FFMPEG_TIMEOUT_SEC)
+
         try:
             while True:
                 chunk = proc.stdout.read(CHUNK_SIZE)
@@ -172,6 +183,11 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
         except GeneratorExit:
             pass
         finally:
+            if watchdog_greenlet:
+                try:
+                    watchdog_greenlet.kill()
+                except Exception:
+                    pass
             try:
                 proc.kill()
             except Exception:
@@ -190,13 +206,34 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
     magic_headers['Connection'] = 'keep-alive'
     proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
 
+    max_bytes = config.MAX_FILESIZE_MB * 1024 * 1024
     r = safe_requests_get(stream_url, headers=magic_headers, stream=True, timeout=60, proxies=proxies)
+
+    cl_header = r.headers.get('Content-Length')
+    if cl_header:
+        try:
+            cl = int(cl_header)
+            if cl > max_bytes:
+                r.close()
+                raise ValueError(f"File size exceeds maximum allowed limit of {config.MAX_FILESIZE_MB} MB.")
+        except ValueError as e:
+            if "exceeds" in str(e):
+                raise
+
     content_type = 'audio/mpeg' if media_type == 'audio' else 'video/mp4'
 
     def gen():
+        start_time = time.time()
+        timeout_sec = config.FFMPEG_TIMEOUT_SEC
+        total_bytes = 0
         try:
             for chunk in r.iter_content(chunk_size=1024 * 1024):
+                if time.time() - start_time > timeout_sec:
+                    break
                 if chunk:
+                    total_bytes += len(chunk)
+                    if total_bytes > max_bytes:
+                        break
                     yield chunk
         except (ConnectionError, GeneratorExit):
             pass
@@ -383,6 +420,14 @@ def download_video():
         if is_youtube:
             youtube_circuit_breaker.record_success()
 
+        # Reject live streams and upcoming broadcasts
+        is_live = info.get('is_live') or info.get('live_status') in ('is_live', 'is_upcoming')
+        if is_live:
+            return jsonify({
+                'success': False,
+                'error': 'Live streams and upcoming broadcasts are not supported.'
+            }), 400
+
         formats = info.get('formats', [])
         duration = info.get('duration', 0)
 
@@ -396,6 +441,7 @@ def download_video():
         has_any_audio = any(f.get('acodec', 'none') != 'none' for f in formats)
 
         audio_options, video_options = [], []
+        max_bytes = config.MAX_FILESIZE_MB * 1024 * 1024
 
         for f in formats:
             fmt_id = f.get('format_id')
@@ -410,6 +456,9 @@ def download_video():
                 tbr = f.get('tbr') or f.get('vbr') or f.get('abr')
                 if tbr:
                     filesize = int((tbr * 1000 * duration) / 8)
+
+            if filesize and filesize > max_bytes:
+                continue
 
             size_str = format_size(filesize)
             protocol = f.get('protocol', '')
@@ -632,6 +681,12 @@ def stream_download():
                 resp.set_cookie(f"dl_{token}", "1", max_age=60, path="/")
             return resp
 
+    except SSRFValidationError as e:
+        release_permit()
+        return jsonify({"success": False, "error": map_error_message(e)}), 400
+    except ValueError as e:
+        release_permit()
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception:
         release_permit()
         raise
@@ -705,7 +760,10 @@ def preview_video():
         if range_header:
             headers['Range'] = range_header
 
-        r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30)
+        try:
+            r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30)
+        except SSRFValidationError as e:
+            return jsonify({"success": False, "error": map_error_message(e)}), 400
 
         response_headers = {
             'Content-Type': 'video/mp4' if is_video else 'audio/mpeg',

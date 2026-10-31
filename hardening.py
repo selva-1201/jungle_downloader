@@ -84,24 +84,35 @@ def sanitize_filename(filename: str, ext: str = ".mp4") -> str:
     """
     Sanitizes arbitrary user or video title strings into a safe filename.
     Strips CR, LF, nulls, path traversal separators, and quotes.
+    Caps filename length to at most 150 characters before extension.
+    Strips Unicode bidirectional override characters (U+202A-202E, U+2066-2069).
     """
     if not filename:
         filename = "Jungle_Download"
 
+    if ext and filename.lower().endswith(ext.lower()):
+        base = filename[:-len(ext)]
+    else:
+        base = filename
+
+    # Strip bidi override characters (U+202A-202E, U+2066-2069)
+    clean = re.sub(r"[\u202a-\u202e\u2066-\u2069]", "", base)
+
     # Strip newlines, control characters, nulls
-    clean = re.sub(r"[\r\n\x00-\x1f\x7f]", "", filename).strip()
+    clean = re.sub(r"[\r\n\x00-\x1f\x7f]", "", clean).strip()
 
     # Strip path traversal and filesystem special chars
     clean = re.sub(r'[/\\?%*:|"<>]+', "_", clean)
     clean = clean.strip("._ ")
 
+    # Cap base filename length to at most 150 characters before extension
+    if len(clean) > 150:
+        clean = clean[:150].strip("._ ")
+
     if not clean:
         clean = "Jungle_Download"
 
-    if not clean.lower().endswith(ext.lower()):
-        clean = f"{clean}{ext}"
-
-    return clean
+    return f"{clean}{ext}"
 
 
 def build_content_disposition(filename: str, ext: str = ".mp4") -> str:

@@ -228,9 +228,11 @@ def test_stream_and_preview_reject_redirect_to_private_ip(client):
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))
             ]
             # Stream path rejects SSRF redirect
-            with pytest.raises(SSRFValidationError):
-                client.get(f"/api/stream?token={token}&format_id=18")
+            resp_s = client.get(f"/api/stream?token={token}&format_id=18")
+            assert resp_s.status_code == 400
+            assert "not permitted" in resp_s.get_json()["error"]
 
             # Preview path rejects SSRF redirect
-            with pytest.raises(SSRFValidationError):
-                client.get(f"/api/preview?token={token}&format_id=18")
+            resp_p = client.get(f"/api/preview?token={token}&format_id=18")
+            assert resp_p.status_code == 400
+            assert "not permitted" in resp_p.get_json()["error"]

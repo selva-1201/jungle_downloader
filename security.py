@@ -312,6 +312,7 @@ def build_safe_ffmpeg_args(
         "-hide_banner",
         "-loglevel", "error",
         "-protocol_whitelist", "http,https,tcp,tls,crypto",
+        "-rw_timeout", str(int(config.FFMPEG_TIMEOUT_SEC * 1_000_000)),
         "-t", str(max_duration),
         "-max_muxing_queue_size", "1024"
     ]
