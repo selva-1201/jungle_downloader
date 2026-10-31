@@ -150,6 +150,23 @@ def test_ffmpeg_semaphore_saturation_returns_503(client, mocker):
     mock_sem = mocker.patch("app.ffmpeg_semaphore")
     mock_sem.acquire.return_value = False
 
+    resp = client.get(f"/api/stream?token={token}&format_id=18&type=audio")
+    assert resp.status_code == 503
+    assert resp.headers.get("Retry-After") == "30"
+    data = resp.get_json()
+    assert "Server busy" in data["error"]
+
+
+def test_proxy_semaphore_saturation_returns_503(client, mocker):
+    fake_info = {
+        "id": "stream123",
+        "title": "Stream Video",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/video.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mock_sem = mocker.patch("app.proxy_semaphore")
+    mock_sem.acquire.return_value = False
+
     resp = client.get(f"/api/stream?token={token}&format_id=18")
     assert resp.status_code == 503
     assert resp.headers.get("Retry-After") == "30"
@@ -285,4 +302,106 @@ def test_rate_limiter_separate_buckets_for_different_x_real_ips(client, mocker):
         environ_base={"REMOTE_ADDR": trusted_proxy_peer}
     )
     assert r_ip1_repeat.status_code == 429
+
+
+# --- P03 TESTS: LEAKS & SEMAPHORES ---
+def test_response_uniterated_closed_releases_semaphore(client, mocker):
+    fake_info = {
+        "id": "rel123",
+        "title": "Release Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    mocker.patch("app.safe_requests_get", return_value=mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter([b"chunk"])
+    ))
+
+    initial_val = app.proxy_semaphore.counter
+    resp = client.get(f"/api/stream?token={token}&format_id=18", buffered=False)
+    assert resp.status_code == 200
+    assert app.proxy_semaphore.counter == initial_val - 1
+
+    resp.close()
+    assert app.proxy_semaphore.counter == initial_val
+
+
+def test_exception_from_requests_releases_permit(client, mocker):
+    fake_info = {
+        "id": "exc123",
+        "title": "Exception Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    import requests
+    mocker.patch("app.safe_requests_get", side_effect=requests.exceptions.ConnectionError("fail"))
+
+    initial_val = app.proxy_semaphore.counter
+    with pytest.raises(requests.exceptions.ConnectionError):
+        client.get(f"/api/stream?token={token}&format_id=18")
+
+    assert app.proxy_semaphore.counter == initial_val
+
+
+def test_five_concurrent_progressive_downloads_succeed_while_ffmpeg_max_is_three(client, mocker):
+    fake_info = {
+        "id": "prog123",
+        "title": "Prog Test",
+        "extractor": "generic",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+    mocker.patch("app.safe_requests_get", return_value=mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter([b"chunk"])
+    ))
+
+    # Exhaust all 3 permits of ffmpeg_semaphore
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.acquire(blocking=False) is True
+    assert app.ffmpeg_semaphore.counter == 0
+
+    responses = []
+    try:
+        # All 5 progressive downloads should succeed because they use proxy_semaphore, not ffmpeg
+        for _ in range(5):
+            resp = client.get(f"/api/stream?token={token}&format_id=18")
+            assert resp.status_code == 200
+            responses.append(resp)
+    finally:
+        for r in responses:
+            r.close()
+        app.ffmpeg_semaphore.release()
+        app.ffmpeg_semaphore.release()
+        app.ffmpeg_semaphore.release()
+
+
+def test_killing_client_midstream_terminates_ffmpeg_subprocess(client, mocker):
+    fake_info = {
+        "id": "ffproc123",
+        "title": "FFmpeg Kill Test",
+        "formats": [{"format_id": "18", "vcodec": "avc1", "acodec": "mp4a", "url": "https://example.com/v.mp4"}]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/v.mp4")
+
+    mock_proc = mocker.MagicMock()
+    mock_proc.stdout.read.side_effect = [b"chunk1", b"chunk2"]
+
+    import gevent.subprocess
+    mocker.patch.object(gevent.subprocess, "Popen", return_value=mock_proc)
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    resp = client.get(f"/api/stream?token={token}&format_id=18&type=audio")
+    assert resp.status_code == 200
+
+    # Read one chunk then simulate client disconnecting / closing
+    gen = resp.response
+    next(iter(gen))
+    resp.close()
+
+    assert mock_proc.kill.called
+    assert mock_proc.wait.called
 

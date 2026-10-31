@@ -76,6 +76,7 @@ class AppConfig:
     DIRECT_LINK_MODE: str = field(default_factory=lambda: os.getenv("DIRECT_LINK_MODE", "large_only").lower())
 
     MAX_CONCURRENT_FFMPEG: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_FFMPEG", 3))
+    MAX_CONCURRENT_PROXY: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_PROXY", 20))
     MAX_CONCURRENT_EXTRACT: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_EXTRACT", 6))
     MAX_CONCURRENT_YOUTUBE: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_YOUTUBE", 2))
     FFMPEG_TIMEOUT_SEC: int = field(default_factory=lambda: _get_int("FFMPEG_TIMEOUT_SEC", 900))

@@ -1,6 +1,8 @@
 import logging
 import os
 import subprocess
+import gevent
+from gevent import subprocess as gevent_subprocess
 from urllib.parse import quote
 from flask import Flask, render_template, request, jsonify, Response, redirect
 from flask_limiter import Limiter
@@ -27,6 +29,8 @@ from hardening import (
 from concurrency import (
     extract_semaphore,
     ffmpeg_semaphore,
+    proxy_semaphore,
+    ReleasingIterator,
 )
 from cache_store import cache_store
 from turnstile import (
@@ -145,21 +149,37 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
             validate_public_url(target_video_url)
         if target_audio_url:
             validate_public_url(target_audio_url)
-        proc = subprocess.Popen(ff_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        if config.LOG_LEVEL == "DEBUG":
+            proc = gevent_subprocess.Popen(ff_cmd, stdout=gevent_subprocess.PIPE, stderr=gevent_subprocess.PIPE)
+            def drain_stderr(p):
+                try:
+                    err = p.stderr.read()
+                    if err:
+                        logging.getLogger(__name__).debug(f"FFMPEG Error: {err.decode('utf-8', errors='ignore')}")
+                except Exception:
+                    pass
+            gevent.spawn(drain_stderr, proc)
+        else:
+            proc = gevent_subprocess.Popen(ff_cmd, stdout=gevent_subprocess.PIPE, stderr=gevent_subprocess.DEVNULL)
+
         try:
             while True:
                 chunk = proc.stdout.read(CHUNK_SIZE)
                 if not chunk:
-                    err = proc.stderr.read()
-                    if err:
-                        log.error(f"FFMPEG Error: {err.decode('utf-8', errors='ignore')}")
                     break
                 yield chunk
         except GeneratorExit:
             pass
         finally:
-            proc.kill()
-            proc.wait()
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            try:
+                proc.wait()
+            except Exception:
+                pass
 
     return gen(), content_type
 
@@ -557,57 +577,64 @@ def stream_download():
     }
 
     needs_ffmpeg = (media_type == 'audio') or fragmented or (media_type == 'video' and not has_audio)
+    active_semaphore = ffmpeg_semaphore if needs_ffmpeg else proxy_semaphore
 
-    acquired_ff = ffmpeg_semaphore.acquire(blocking=True, timeout=10)
-    if not acquired_ff:
+    acquired = active_semaphore.acquire(blocking=True, timeout=10)
+    if not acquired:
+        err_text = "Server busy converting media. Please try again in a minute." if needs_ffmpeg else "Server busy streaming downloads. Please try again in a moment."
         resp = jsonify({
             "success": False,
-            "error": "Server busy converting media. Please try again in a minute."
+            "error": err_text
         })
         resp.headers["Retry-After"] = "30"
         return resp, 503
 
-    if needs_ffmpeg:
-        if media_type == 'audio':
-            raw_gen, content_type = stream_universal_ffmpeg(target_format, None, is_audio_only=True)
+    permit_released = False
+    def release_permit():
+        nonlocal permit_released
+        if not permit_released:
+            permit_released = True
+            try:
+                active_semaphore.release()
+            except Exception:
+                pass
+
+    try:
+        if needs_ffmpeg:
+            if media_type == 'audio':
+                raw_gen, content_type = stream_universal_ffmpeg(target_format, None, is_audio_only=True)
+            else:
+                best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
+                if not best_audio:
+                    best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
+                raw_gen, content_type = stream_universal_ffmpeg(target_format, best_audio, is_audio_only=False)
+
+            base_headers['Content-Type'] = content_type
+            wrapped_gen = ReleasingIterator(raw_gen, on_release=release_permit)
+            resp = Response(wrapped_gen, status=200, headers=base_headers, direct_passthrough=False)
+            resp.call_on_close(release_permit)
+            if token:
+                resp.set_cookie(f"dl_{token}", "1", max_age=60, path="/")
+            return resp
+
         else:
-            best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
-            if not best_audio:
-                best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
-            raw_gen, content_type = stream_universal_ffmpeg(target_format, best_audio, is_audio_only=False)
+            # Single progressive stream with both audio and video
+            proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
+            raw_gen, content_type, content_length = stream_via_direct_url(target_format, media_type, proxy_url=proxy_url)
+            base_headers['Content-Type'] = content_type
+            if content_length:
+                base_headers['Content-Length'] = str(content_length)
 
-        def cooperative_gen():
-            try:
-                for chunk in raw_gen:
-                    yield chunk
-            finally:
-                ffmpeg_semaphore.release()
+            wrapped_gen = ReleasingIterator(raw_gen, on_release=release_permit)
+            resp = Response(wrapped_gen, status=200, headers=base_headers, direct_passthrough=False)
+            resp.call_on_close(release_permit)
+            if token:
+                resp.set_cookie(f"dl_{token}", "1", max_age=60, path="/")
+            return resp
 
-        base_headers['Content-Type'] = content_type
-        resp = Response(cooperative_gen(), status=200, headers=base_headers)
-        if token:
-            resp.set_cookie(f"dl_{token}", "1", max_age=60, path="/")
-        return resp
-
-    else:
-        # Single progressive stream with both audio and video
-        proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
-        raw_gen, content_type, content_length = stream_via_direct_url(target_format, media_type, proxy_url=proxy_url)
-        base_headers['Content-Type'] = content_type
-        if content_length:
-            base_headers['Content-Length'] = str(content_length)
-
-        def cooperative_direct_gen():
-            try:
-                for chunk in raw_gen:
-                    yield chunk
-            finally:
-                ffmpeg_semaphore.release()
-
-        resp = Response(cooperative_direct_gen(), status=200, headers=base_headers)
-        if token:
-            resp.set_cookie(f"dl_{token}", "1", max_age=60, path="/")
-        return resp
+    except Exception:
+        release_permit()
+        raise
 
 
 @app.route('/api/preview')
@@ -692,11 +719,16 @@ def preview_video():
             response_headers['Content-Length'] = r.headers['Content-Length']
 
         def gen():
-            for chunk in r.iter_content(chunk_size=512 * 1024):
-                if chunk:
-                    yield chunk
+            try:
+                for chunk in r.iter_content(chunk_size=512 * 1024):
+                    if chunk:
+                        yield chunk
+            finally:
+                r.close()
 
-        return Response(gen(), status=206 if range_header else 200, headers=response_headers)
+        resp = Response(gen(), status=206 if range_header else 200, headers=response_headers, direct_passthrough=False)
+        resp.call_on_close(r.close)
+        return resp
 
 
 if __name__ == '__main__':

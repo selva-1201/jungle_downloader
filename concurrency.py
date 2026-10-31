@@ -11,6 +11,48 @@ logger = logging.getLogger(__name__)
 # Semaphores controlling simultaneous heavy tasks
 extract_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_EXTRACT)
 ffmpeg_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_FFMPEG)
+proxy_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_PROXY)
+
+
+class ReleasingIterator:
+    """
+    Wraps an iterator/generator and ensures a release callback is invoked exactly once
+    upon normal exhaustion, error, explicit close(), or object destruction.
+    """
+    def __init__(self, iterator, on_release):
+        self._iterator = iter(iterator)
+        self._on_release = on_release
+        self._released = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self._iterator)
+        except (StopIteration, GeneratorExit):
+            self.close()
+            raise
+        except Exception:
+            self.close()
+            raise
+
+    def close(self):
+        if not self._released:
+            self._released = True
+            if hasattr(self._iterator, "close"):
+                try:
+                    self._iterator.close()
+                except Exception:
+                    pass
+            if callable(self._on_release):
+                try:
+                    self._on_release()
+                except Exception:
+                    pass
+
+    def __del__(self):
+        self.close()
 
 TEMP_DIR = os.getenv("JUNGLE_TEMP_DIR", "/tmp/jungle_media")
 os.makedirs(TEMP_DIR, exist_ok=True)
