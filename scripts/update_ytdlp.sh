@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # scripts/update_ytdlp.sh
-# Staging update and verification script for yt-dlp with Telegram alert fallback.
+# Staging update and verification script for yt-dlp on local/bare-metal virtualenvs.
+# NOTE: For Docker production deployments, use `scripts/update_ytdlp_docker.sh` instead.
+
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

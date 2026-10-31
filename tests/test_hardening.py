@@ -72,33 +72,70 @@ def test_is_cloudflare_ip():
     assert is_cloudflare_ip("127.0.0.1") is False
 
 
-def test_get_real_client_ip_trusted_proxy():
-    # Case 1: Untrusted direct socket IP -> ignore CF-Connecting-IP spoofing
-    builder = EnvironBuilder(
+def test_get_real_client_ip_trusted_proxy_and_x_real_ip():
+    # 1. Peer in trusted range (127.0.0.1/32, 172.16.0.0/12, 10.0.0.0/8) -> X-Real-IP is used
+    builder_loopback = EnvironBuilder(
         path="/",
-        headers={"CF-Connecting-IP": "203.0.113.199"},
-        environ_base={"REMOTE_ADDR": "198.51.100.22"}  # Not a Cloudflare or local IP
-    )
-    req = Request(builder.get_environ())
-    assert get_real_client_ip(req) == "198.51.100.22"
-
-    # Case 2: Trusted Cloudflare socket IP -> accept CF-Connecting-IP
-    builder_cf = EnvironBuilder(
-        path="/",
-        headers={"CF-Connecting-IP": "203.0.113.199"},
-        environ_base={"REMOTE_ADDR": "104.16.1.1"}  # Cloudflare edge IP
-    )
-    req_cf = Request(builder_cf.get_environ())
-    assert get_real_client_ip(req_cf) == "203.0.113.199"
-
-    # Case 3: Local Caddy reverse proxy on loopback -> accept CF-Connecting-IP
-    builder_local = EnvironBuilder(
-        path="/",
-        headers={"CF-Connecting-IP": "203.0.113.199"},
+        headers={"X-Real-IP": "203.0.113.199"},
         environ_base={"REMOTE_ADDR": "127.0.0.1"}
     )
-    req_local = Request(builder_local.get_environ())
-    assert get_real_client_ip(req_local) == "203.0.113.199"
+    req_loopback = Request(builder_loopback.get_environ())
+    assert get_real_client_ip(req_loopback) == "203.0.113.199"
+
+    builder_docker_bridge = EnvironBuilder(
+        path="/",
+        headers={"X-Real-IP": "198.51.100.50"},
+        environ_base={"REMOTE_ADDR": "172.18.0.2"}  # Within 172.16.0.0/12
+    )
+    req_docker = Request(builder_docker_bridge.get_environ())
+    assert get_real_client_ip(req_docker) == "198.51.100.50"
+
+    builder_private_10 = EnvironBuilder(
+        path="/",
+        headers={"X-Real-IP": "198.51.100.60"},
+        environ_base={"REMOTE_ADDR": "10.0.2.15"}  # Within 10.0.0.0/8
+    )
+    req_10 = Request(builder_private_10.get_environ())
+    assert get_real_client_ip(req_10) == "198.51.100.60"
+
+    # 2. Peer NOT trusted -> spoofed X-Real-IP is ignored; returns peer socket address
+    builder_untrusted = EnvironBuilder(
+        path="/",
+        headers={"X-Real-IP": "203.0.113.199"},
+        environ_base={"REMOTE_ADDR": "198.51.100.22"}  # Public untrusted peer
+    )
+    req_untrusted = Request(builder_untrusted.get_environ())
+    assert get_real_client_ip(req_untrusted) == "198.51.100.22"
+
+    # 3. Invalid X-Real-IP value falls back to the peer socket address
+    builder_invalid_ip = EnvironBuilder(
+        path="/",
+        headers={"X-Real-IP": "not-an-ip-address; drop table;"},
+        environ_base={"REMOTE_ADDR": "127.0.0.1"}
+    )
+    req_invalid_ip = Request(builder_invalid_ip.get_environ())
+    assert get_real_client_ip(req_invalid_ip) == "127.0.0.1"
+
+    builder_invalid_octet = EnvironBuilder(
+        path="/",
+        headers={"X-Real-IP": "999.999.999.999"},
+        environ_base={"REMOTE_ADDR": "172.18.0.2"}
+    )
+    req_invalid_octet = Request(builder_invalid_octet.get_environ())
+    assert get_real_client_ip(req_invalid_octet) == "172.18.0.2"
+
+    # 4. CF-Connecting-IP and X-Forwarded-For are completely ignored
+    builder_cf_ignored = EnvironBuilder(
+        path="/",
+        headers={
+            "CF-Connecting-IP": "1.2.3.4",
+            "X-Forwarded-For": "5.6.7.8"
+        },
+        environ_base={"REMOTE_ADDR": "127.0.0.1"}
+    )
+    req_cf_ignored = Request(builder_cf_ignored.get_environ())
+    assert get_real_client_ip(req_cf_ignored) == "127.0.0.1"
+
 
 
 def test_apply_security_headers():

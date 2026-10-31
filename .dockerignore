@@ -29,4 +29,10 @@ htmlcov/
 # Documentation & Plan
 docs/
 PLAN.md
+DEPLOY.md
+RUNBOOK.md
+
+# Local build binaries & scripts
+bin/
+
 

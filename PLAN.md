@@ -88,12 +88,61 @@ Hardening "Jungle Media Downloader" for production readiness on an Oracle Cloud 
 
 ---
 
-## Phase 3: Oracle Deployment (deploy/ directory + DEPLOY.md) — [NEXT]
-- **3.1 Dockerfile**: Multi-stage, python 3.11/3.12-slim, non-root user, multi-arch (linux/arm64, linux/amd64), HEALTHCHECK /healthz.
-- **3.2 docker-compose.yml**: Services app + caddy (+ optional redis profile), restart policies, mem/cpu limits, log rotation.
-- **3.3 Caddyfile**: Auto-TLS / Cloudflare Origin cert, Cloudflare trusted_proxies, flush_interval -1 for streaming, security headers.
-- **3.4 Cloudflare plan**: Orange-cloud HTML, MEDIA_HOST grey-cloud media streaming option.
-- **3.5 Host hardening & runbooks**: UFW, fail2ban, IMDS iptables egress rule, systemd unit, RUNBOOK.md.
+## Phase 3: Oracle Deployment (deploy/ directory + DEPLOY.md) — [DONE]
+
+### Sub-step Completion
+- [x] **3.1 Multi-Stage Multi-Arch Dockerfile**:
+  - Multi-stage build with `python:3.11-slim` runtime.
+  - Stage 1 (`tailwind-builder`): Downloads standalone Tailwind CSS binary matching host/target architecture (`arm64` vs `amd64`) at build time; compiles minified `static/css/app.css` without Node.js.
+  - `bin/` stays gitignored and `.dockerignore` excludes local binaries, tests, and secrets.
+  - Hardened non-root user (`appuser:appgroup`, UID 10001).
+  - Production Gunicorn configuration: single worker (`--workers 1`) to preserve in-memory token cache & rate limiter integrity, `--worker-connections 1000`, and `--graceful-timeout 30`.
+  - Read-only root filesystem resilience: mapped `TMPDIR`, `HOME`, `XDG_CACHE_HOME`, and `XDG_CONFIG_HOME` to tmpfs `/tmp`.
+  - Built-in `HEALTHCHECK` probing `http://127.0.0.1:5000/healthz`.
+  - Pinned `ffmpeg`, `curl`, and runtime requirements.
+- [x] **3.2 Production Docker Compose Stack (`docker-compose.yml`)**:
+  - `app` service: read-only root filesystem with `tmpfs: /tmp:512m`, memory limit `2048M`, cpu limit `2.0`, `no-new-privileges:true`.
+  - `caddy` service: Caddy 2.9 reverse proxy publishing 80, 443 (TCP/UDP HTTP/3 QUIC), memory limit `256M`. Environment passes `SITE_ADDRESS`.
+  - Optional `redis` service profile for distributed caching (`profiles: ["redis"]`).
+  - Container log rotation capped at 10MB x 3 files (`json-file`).
+  - Verified with `docker compose config`.
+- [x] **3.3 Hardened Reverse Proxy & Client IP Trust**:
+  - Dynamic site address configured from environment variable `SITE_ADDRESS` (`{$SITE_ADDRESS:localhost}`).
+  - Strictly blocks `/metrics` from external/public traffic (`403 Forbidden`); accessible only from localhost loopback (`not remote_ip 127.0.0.1 ::1`).
+  - Caddy forwards verified client IP in `X-Real-IP`.
+  - Application `hardening.get_real_client_ip`: trusts `X-Real-IP` (falling back to peer socket address) ONLY when the immediate peer is within `TRUSTED_PROXY_CIDRS` (`172.16.0.0/12`, `10.0.0.0/8`, `127.0.0.1/32`).
+  - Ignores `CF-Connecting-IP` and `X-Forwarded-For` entirely in the app.
+  - Flask-Limiter `key_func` verified: separate client IPs get distinct rate limit buckets under trusted reverse proxy peers.
+  - `flush_interval -1` and 600s transport timeouts on `/api/stream` and `/api/preview` for unbuffered media streaming.
+  - Gzip/zstd compression enabled for text/JSON but explicitly excluded on streaming media.
+  - 10MB request body limit and security headers (`nosniff`, `SAMEORIGIN`, `strict-origin-when-cross-origin`).
+  - Commented `MEDIA_HOST` grey-cloud configuration for high-volume streaming Cloudflare TOS compliance.
+  - Documented `/metrics` verification via `docker compose exec app curl -s localhost:5000/metrics` in both `DEPLOY.md` and `RUNBOOK.md`.
+
+- [x] **3.4 Host Hardening Script (`deploy/host-setup.sh`) & Automated Updates**:
+  - Non-destructive reviewable setup script for Oracle Ubuntu 24.04 (Mumbai/Hyderabad).
+  - Configures 4GB swapfile with conservative `vm.swappiness=10`.
+  - UFW firewall: allows 22 (SSH), 80 (HTTP), 443 (HTTPS TCP + UDP HTTP/3 QUIC); fixes Oracle default iptables drops.
+  - Fail2ban jail for SSH with 3-retry max and 1-hour ban time.
+  - Automatic unattended security upgrades configured.
+  - Oracle Cloud IMDS metadata protection: blocks container egress to `169.254.169.254` via `DOCKER-USER` chain.
+  - Docker daemon log limits default configuration (`/etc/docker/daemon.json`).
+  - Docker deployment automated yt-dlp updater (`scripts/update_ytdlp_docker.sh`): builds staged candidate image, executes smoke test inside container, promotes image and restarts container.
+
+- [x] **3.5 Systemd Unit & Documentation**:
+  - Created `deploy/jungle-downloader.service` for automatic compose stack management on host boot.
+  - Comprehensive `DEPLOY.md`: step-by-step for Oracle Cloud Ubuntu 24.04, Mumbai region, Ampere A1 (with AMD fallback), Pay-As-You-Go upgrade to prevent idle reclaim, and $1 monthly budget alert.
+  - Comprehensive `RUNBOOK.md`: actionable operational runbooks for yt-dlp breakages, datacenter IP blocks (429), disk full emergencies, memory/bandwidth spikes, DMCA takedown procedures, and zero-DB disaster recovery.
+
+---
+
+## Phase 4: Legal, Trust, SEO (organic growth) — [NEXT]
+- **4.1 Accurate terms & privacy**: Rewrite terms.html and privacy.html reflecting ephemeral link processing, short retention, no media storage, Cloudflare/Turnstile and ad networks.
+- **4.2 DMCA & Contact pages**: Implement /dmca procedure and /contact route with obfuscated email; integrate takedown with `data/blocked_domains.txt` and `data/blocked_urls.txt`.
+- **4.3 Consent banner**: Lightweight GDPR/ePrivacy cookie banner for EU/UK traffic using `CF-IPCountry`.
+- **4.4 Platform landing pages**: Generate crawlable SEO landing pages (`/instagram-reels-downloader`, `/tiktok-video-downloader`, `/youtube-video-downloader`, `/status-save`, etc.) with unique copy and JSON-LD schema.
+- **4.5 Growth & i18n checklist**: Google Search Console / Bing Webmaster setup guide and i18n scaffolding.
+
 
 ---
 

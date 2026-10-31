@@ -1,0 +1,104 @@
+# ==============================================================================
+# Jungle Media Downloader - Production Docker Compose Stack
+# Includes Flask Application, Caddy Reverse Proxy, and Optional Redis Profile
+# ==============================================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jungle-downloader:latest
+    container_name: jungle_app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+
+    environment:
+      - PORT=5000
+      - TMPDIR=/tmp
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - jungle_net
+    # Optional cookies file mount (read-only from outside the repo path if used):
+    # volumes:
+    #   - /etc/jungle/cookies.txt:/etc/jungle/cookies.txt:ro
+
+  caddy:
+    image: caddy:2.9-alpine
+    container_name: jungle_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 QUIC
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS:-${DOMAIN:-localhost}}
+      - DOMAIN=${DOMAIN:-localhost}
+      - ACME_EMAIL=${ACME_EMAIL:-admin@localhost}
+
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - jungle_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: jungle_redis
+    restart: unless-stopped
+    profiles:
+      - redis
+    command: redis-server --save "" --appendonly no --maxmemory 128mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - jungle_net
+
+networks:
+  jungle_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

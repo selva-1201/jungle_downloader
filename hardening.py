@@ -42,29 +42,42 @@ def is_cloudflare_ip(ip_str: str) -> bool:
 def get_real_client_ip(req: Request) -> str:
     """
     Extracts the authenticated client IP address.
-    Only trusts CF-Connecting-IP / X-Forwarded-For if request comes from
-    Cloudflare or local reverse proxy (Caddy / 127.0.0.1).
+    Trusts X-Real-IP (and falls back to the socket address) ONLY when the
+    immediate peer address is in TRUSTED_PROXY_CIDRS.
+    Ignores CF-Connecting-IP and X-Forwarded-For entirely.
     """
-    remote_ip = req.remote_addr or "127.0.0.1"
+    peer = (req.remote_addr or "").strip()
+    if not peer:
+        return "127.0.0.1"
 
-    # Local reverse proxy trust (e.g. Caddy running on host or Docker bridge)
-    is_trusted_proxy = False
     try:
-        ip_obj = ipaddress.ip_address(remote_ip)
-        if ip_obj.is_loopback or is_cloudflare_ip(remote_ip):
-            is_trusted_proxy = True
+        peer_ip = ipaddress.ip_address(peer)
     except ValueError:
-        pass
+        return peer
 
-    if config.TRUST_CLOUDFLARE_IP and is_trusted_proxy:
-        cf_ip = req.headers.get("CF-Connecting-IP")
-        if cf_ip:
-            return cf_ip.strip()
-        x_forwarded_for = req.headers.get("X-Forwarded-For")
-        if x_forwarded_for:
-            return x_forwarded_for.split(",")[0].strip()
+    is_trusted = False
+    for cidr in config.TRUSTED_PROXY_CIDRS:
+        try:
+            network = ipaddress.ip_network(cidr.strip(), strict=False)
+            if peer_ip in network:
+                is_trusted = True
+                break
+        except ValueError:
+            continue
 
-    return remote_ip
+    if is_trusted:
+        x_real_ip = req.headers.get("X-Real-IP")
+        if x_real_ip:
+            x_real_ip = x_real_ip.strip()
+            try:
+                valid_ip = ipaddress.ip_address(x_real_ip)
+                return str(valid_ip)
+            except ValueError:
+                # Invalid X-Real-IP value falls back to the peer
+                return peer
+
+    return peer
+
 
 
 def sanitize_filename(filename: str, ext: str = ".mp4") -> str:

@@ -45,9 +45,12 @@ DEFAULT_CONSENT_COUNTRIES = [
     "PL", "PT", "RO", "SK", "SI", "ES", "SE", "GB", "CH", "IS", "LI", "NO"
 ]
 
+DEFAULT_TRUSTED_PROXY_CIDRS = ["172.16.0.0/12", "10.0.0.0/8", "127.0.0.1/32"]
+
 
 @dataclass
 class AppConfig:
+
     SITE_URL: str = field(default_factory=lambda: os.getenv("SITE_URL", "http://localhost:5000").rstrip("/"))
     ENV: str = field(default_factory=lambda: os.getenv("ENV", "dev").lower())
     DEBUG: bool = field(default_factory=lambda: _get_bool("DEBUG", False))
@@ -84,6 +87,10 @@ class AppConfig:
     TURNSTILE_SECRET: str = field(default_factory=lambda: os.getenv("TURNSTILE_SECRET", ""))
 
     TRUST_CLOUDFLARE_IP: bool = field(default_factory=lambda: _get_bool("TRUST_CLOUDFLARE_IP", True))
+    TRUSTED_PROXY_CIDRS: List[str] = field(
+        default_factory=lambda: _get_list("TRUSTED_PROXY_CIDRS", DEFAULT_TRUSTED_PROXY_CIDRS)
+    )
+
 
     YT_MODE: str = field(default_factory=lambda: os.getenv("YT_MODE", "best_effort").lower())
     YT_CIRCUIT_BREAKER_FAILURES: int = field(default_factory=lambda: _get_int("YT_CIRCUIT_BREAKER_FAILURES", 3))

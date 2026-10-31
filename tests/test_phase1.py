@@ -198,3 +198,46 @@ def test_rate_limiter_exceeded_returns_429(client, mocker):
     data = r_429.get_json()
     assert data["success"] is False
     assert data["code"] == "RATE_LIMIT_EXCEEDED"
+
+
+def test_rate_limiter_separate_buckets_for_different_x_real_ips(client, mocker):
+    mocker.patch.object(yt_dlp.YoutubeDL, "extract_info", return_value={"id": "test", "formats": []})
+    mocker.patch("app.validate_public_url", return_value=True)
+
+    trusted_proxy_peer = "127.0.0.1"
+    client_ip_1 = "198.51.100.11"
+    client_ip_2 = "198.51.100.22"
+
+    # Exhaust rate limit for client_ip_1 (10 allowed per minute)
+    responses_ip1 = []
+    for i in range(11):
+        r = client.post(
+            "/api/download",
+            json={"url": f"https://www.youtube.com/watch?v=sample1_{i}"},
+            headers={"X-Real-IP": client_ip_1},
+            environ_base={"REMOTE_ADDR": trusted_proxy_peer}
+        )
+        responses_ip1.append(r)
+
+    # 11th request from client_ip_1 must hit 429
+    assert responses_ip1[-1].status_code == 429
+
+    # Immediate request from client_ip_2 via the same trusted proxy must succeed (200),
+    # proving client_ip_1 and client_ip_2 are tracked in separate rate limiting buckets
+    r_ip2 = client.post(
+        "/api/download",
+        json={"url": "https://www.youtube.com/watch?v=sample2_first"},
+        headers={"X-Real-IP": client_ip_2},
+        environ_base={"REMOTE_ADDR": trusted_proxy_peer}
+    )
+    assert r_ip2.status_code == 200
+
+    # Ensure client_ip_1 is still rate limited
+    r_ip1_repeat = client.post(
+        "/api/download",
+        json={"url": "https://www.youtube.com/watch?v=sample1_retry"},
+        headers={"X-Real-IP": client_ip_1},
+        environ_base={"REMOTE_ADDR": trusted_proxy_peer}
+    )
+    assert r_ip1_repeat.status_code == 429
+

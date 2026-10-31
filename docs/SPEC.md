@@ -286,6 +286,7 @@ ALLOW_ADULT=false; filenames with \r\n are neutralized; no secret files remain i
     (hreflang, /ta/, /hi/ paths), but only ship English now.
 7.6 Add a README section "Growth checklist": submit to Google Search Console and Bing Webmaster,
     structured-data testing, Core Web Vitals monitoring, and a content plan.
+7.7 Add scripts/bulk_probe.py: iterate yt-dlp extractors in popularity order, take one URL from each extractor's _TESTS (skip only_matching/age-gated/adult-blocked), extract metadata only (no download), 4s delay between requests, max N from CLI arg, write data/site_status.json {site, status, error_class, checked_at}. Resumable. Never run it automatically.
 
 ============================================================
 8. ADS-READY (disabled at launch)
