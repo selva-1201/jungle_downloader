@@ -205,7 +205,13 @@ newgrp docker
 
 ## 7. Application Configuration & Deployment
 
-### 7.1 Create Production Environment File (`.env`)
+### 7.1 Generate Production Secrets & Environment (`.env`)
+Generate a strong random secret key for session verification:
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Create and edit the `.env` file:
 ```bash
 cp .env.example .env
 nano .env
@@ -216,10 +222,11 @@ Ensure the following variables are configured:
 SITE_URL=https://example.com
 DOMAIN=example.com
 ACME_EMAIL=admin@example.com
-ENV=production
+ENV=prod
 DEBUG=false
 PORT=5000
 LOG_LEVEL=INFO
+SECRET_KEY=replace_with_generated_64_hex_secret
 
 # Bot Protection
 TURNSTILE_SITE_KEY=0x4AAAAAA...
@@ -233,14 +240,33 @@ MAX_CONCURRENT_YOUTUBE=2
 PROXY_MAX_MB=300
 DIRECT_LINK_MODE=large_only
 
+# Resource Limits (Compose)
+APP_MEM_LIMIT=2048M
+APP_CPUS=2.0
+
 # YouTube Mode
 YT_MODE=best_effort
 YT_CIRCUIT_BREAKER_FAILURES=3
 YT_CIRCUIT_BREAKER_COOLDOWN_SEC=300
 
+# Telegram Alerts (for automated yt-dlp updater and disk/RAM resource alerts)
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
+TELEGRAM_CHAT_ID=-1001234567890
+
 # Legal & Contacts
 CONTACT_EMAIL=support@example.com
 DMCA_EMAIL=dmca@example.com
+```
+
+### 7.2 Multi-Architecture Container Build (Docker Buildx)
+Per SPEC section 6.1, the project supports dual-architecture compilation for ARM64 (Oracle Ampere A1) and AMD64 (x86_64):
+```bash
+# Set up Docker Buildx instance
+docker buildx create --name jungle-builder --use 2>/dev/null || true
+docker buildx inspect --bootstrap
+
+# Build local target image:
+docker compose build app
 ```
 
 ### 7.2 Validate Docker Compose Configuration
