@@ -58,6 +58,61 @@ def test_security_headers_present(client):
     resp = client.get("/healthz")
     assert resp.headers.get("X-Content-Type-Options") == "nosniff"
     assert resp.headers.get("X-Frame-Options") == "SAMEORIGIN"
+
+
+def test_frontend_html_integrity_and_footer_links(client):
+    from html.parser import HTMLParser
+
+    class TagCounter(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.tags = []
+            self.errors = []
+            self.in_footer = False
+            self.footer_tag_stack = []
+
+        def handle_starttag(self, tag, attrs):
+            self.tags.append((tag, dict(attrs)))
+            if tag == "footer":
+                self.in_footer = True
+            if self.in_footer and tag not in ("img", "br", "hr", "input", "meta", "link"):
+                self.footer_tag_stack.append(tag)
+
+        def handle_endtag(self, tag):
+            if self.in_footer and self.footer_tag_stack:
+                if self.footer_tag_stack[-1] == tag:
+                    self.footer_tag_stack.pop()
+            if tag == "footer":
+                self.in_footer = False
+
+    resp = client.get("/")
+    assert resp.status_code == 200
+    html_text = resp.text
+
+    # 1. No stray Chinese characters
+    assert "确定" not in html_text
+
+    # 2. No DRM/Adult keywords in metadata
+    assert "hotstar" not in html_text.lower()
+    assert "sonyliv" not in html_text.lower()
+    assert "jiosaavn" not in html_text.lower()
+
+    # 3. Footer links must point to clean routes /terms and /privacy, NOT .html
+    assert 'href="/terms"' in html_text
+    assert 'href="/privacy"' in html_text
+    assert 'href="/terms.html"' not in html_text
+    assert 'href="/privacy.html"' not in html_text
+
+    # 4. Tag balance in footer
+    parser = TagCounter()
+    parser.feed(html_text)
+    assert len(parser.footer_tag_stack) == 0, f"Unbalanced tags in footer: {parser.footer_tag_stack}"
+
+    # 5. Supported sites page uses data-site attribute without inline onclick
+    resp_sites = client.get("/supported-sites")
+    assert resp_sites.status_code == 200
+    assert 'onclick="filterBy' not in resp_sites.text
+    assert 'data-site=' in resp_sites.text
     assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
     assert "Content-Security-Policy-Report-Only" in resp.headers
 

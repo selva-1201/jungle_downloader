@@ -10,7 +10,7 @@
   <meta name="description"
     content="Jungle Media Downloader is a free, open-source utility. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and 1800+ more sites. No login required. MP4 & MP3 supported.">
   <meta name="keywords" content="
-    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, hotstar video downloader, jiosaavn mp3 downloader, sonyliv downloader, mx player video downloader, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, 1800 sites video downloader, multi site video downloader
+    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, 1800 sites video downloader, multi site video downloader
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
@@ -450,7 +450,7 @@
           </summary>
           <p class="text-xs text-gray-300 mt-3 leading-relaxed">Yes, absolutely. Once you submit a link, navigate to the
             Audio Downloads section on the panel. Jungle Media Downloader processes extraction for popular media streams
-            like YouTube Music, SoundCloud, and JioSaavn, delivering optimized audio files automatically.</p>
+            like YouTube Music, SoundCloud, and Bandcamp, delivering optimized audio files automatically.</p>
         </details>
 
         <details name="faq-group" class="glass-card p-4 rounded-xl cursor-pointer">
@@ -535,7 +535,7 @@
   </main>
 
   <div id="trickModal"
-    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm确定 fade-in">
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
     <div
       class="glass-panel w-full max-w-xs sm:max-w-sm md:max-w-md p-5 sm:p-6 md:p-7 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl transition-all">
 
@@ -569,16 +569,16 @@
   </div>
 
   <footer class="w-full max-w-5xl border-t border-white/5 pt-6 pb-4 mt-4 text-center text-xs text-gray-400">
-    <p class="mb-2 text-gray-400>
+    <p class="mb-2 text-gray-400">
       Jungle Media Downloader · Open Source · Powered by
-      <a href=" https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
+      <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener" class="underline hover:text-gray-400">
       yt-dlp</a>
       · For personal use only · Respect copyright laws
     </p>
     <p class="flex justify-center gap-4 text-gray-400">
-      <a href="/terms.html" class="text-gray-400 hover:underline hover:text-white">Terms of Service</a>
+      <a href="/terms" class="text-gray-400 hover:underline hover:text-white">Terms of Service</a>
       <span>·</span>
-      <a href="/privacy.html" class="text-gray-400 hover:underline hover:text-white">Privacy Policy</a>
+      <a href="/privacy" class="text-gray-400 hover:underline hover:text-white">Privacy Policy</a>
     </p>
   </footer>
 
@@ -666,7 +666,7 @@
 
     function clearUrlInput() {
       document.getElementById('videoUrl').value = '';
-      document.getElementById('btnClearUrl').add('hidden');
+      document.getElementById('btnClearUrl').classList.add('hidden');
     }
 
     function formatDuration(seconds) {
@@ -982,7 +982,7 @@
 
         this.topSites = [
           "YouTube", "Instagram", "TikTok", "Facebook", "Twitter", "Reddit", "Vimeo", "Twitch",
-          "SoundCloud", "Dailymotion", "Pinterest", "LinkedIn", "Bilibili", "JioSaavn", "Snapchat"
+          "SoundCloud", "Dailymotion", "Pinterest", "LinkedIn", "Bilibili", "Tumblr", "Snapchat"
         ];
 
         this.innerHTML = `
@@ -1104,14 +1104,19 @@
       }
 
       renderSites(sitesToRender) {
+        this.sitesGrid.replaceChildren();
         if (!sitesToRender || sitesToRender.length === 0) {
-          this.sitesGrid.innerHTML = '';
           this.notFoundMsg.classList.remove('hidden');
         } else {
           this.notFoundMsg.classList.add('hidden');
-          this.sitesGrid.innerHTML = sitesToRender.map(site =>
-            `<span class="glass-card px-3 py-1.5 rounded-md border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">${site}</span>`
-          ).join('');
+          const fragment = document.createDocumentFragment();
+          sitesToRender.forEach(site => {
+            const span = document.createElement('span');
+            span.className = 'glass-card px-3 py-1.5 rounded-md border border-white/5 bg-white/5 hover:bg-white/10 transition-colors';
+            span.textContent = site;
+            fragment.appendChild(span);
+          });
+          this.sitesGrid.appendChild(fragment);
         }
       }
     }

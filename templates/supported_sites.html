@@ -84,7 +84,7 @@
       <h2 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Popular Platforms</h2>
       <div class="flex flex-wrap gap-2 text-xs">
         {% for site in popular %}
-        <span class="glass-card px-3.5 py-1.5 rounded-full text-white font-medium cursor-pointer" onclick="filterBy('{{ site }}')">
+        <span class="popular-site-chip glass-card px-3.5 py-1.5 rounded-full text-white font-medium cursor-pointer" data-site="{{ site }}">
           {{ site }}
         </span>
         {% endfor %}
@@ -159,6 +159,13 @@
     }
 
     searchInput.addEventListener('input', (e) => applyFilter(e.target.value));
+
+    document.querySelectorAll('.popular-site-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const site = chip.getAttribute('data-site');
+        if (site) filterBy(site);
+      });
+    });
   </script>
 </body>
 
