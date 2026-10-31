@@ -10,6 +10,8 @@ FROM debian:bookworm-slim AS tailwind-builder
 
 ARG TARGETARCH
 ARG TAILWIND_VERSION=v3.4.17
+ARG TAILWIND_SHA256_X64=dc61b3ac6b8c9ca874c0cc4c57b2409791a64c5540404ca5f5367360babc313a
+ARG TAILWIND_SHA256_ARM64=55fd0b241214eff3de1e8ee4f22796662f2d2e7a49bcfca7477cfd0bac398195
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
@@ -23,30 +25,37 @@ COPY tailwind.config.js .
 COPY templates/ templates/
 COPY static/ static/
 
-# Detect architecture (arm64 vs amd64) and download the appropriate standalone Tailwind binary
+# Detect architecture (arm64 vs amd64), download standalone binary, verify sha256 checksum
 RUN ARCH="${TARGETARCH:-$(dpkg --print-architecture)}" && \
     case "$ARCH" in \
-        "arm64"|"aarch64") TAILWIND_BIN="tailwindcss-linux-arm64" ;; \
-        *) TAILWIND_BIN="tailwindcss-linux-x64" ;; \
+        "arm64"|"aarch64") \
+            TAILWIND_BIN="tailwindcss-linux-arm64" && \
+            EXPECTED_SHA="$TAILWIND_SHA256_ARM64" ;; \
+        *) \
+            TAILWIND_BIN="tailwindcss-linux-x64" && \
+            EXPECTED_SHA="$TAILWIND_SHA256_X64" ;; \
     esac && \
-    echo "Downloading Tailwind ${TAILWIND_VERSION} for architecture: ${ARCH} (${TAILWIND_BIN})..." && \
-    curl -sLo /usr/local/bin/tailwindcss \
+    echo "Downloading Tailwind ${TAILWIND_VERSION} for ${ARCH} (${TAILWIND_BIN})..." && \
+    curl -fsSL -o /usr/local/bin/tailwindcss \
         "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/${TAILWIND_BIN}" && \
+    echo "${EXPECTED_SHA}  /usr/local/bin/tailwindcss" | sha256sum -c - && \
     chmod +x /usr/local/bin/tailwindcss && \
     /usr/local/bin/tailwindcss -i static/css/input.css -o /build/static/css/app.css --minify -c tailwind.config.js
 
 # ------------------------------------------------------------------------------
 # Stage 2: Automated Test Target (installs dev deps and runs pytest)
 # ------------------------------------------------------------------------------
-FROM python:3.11-slim AS test
+FROM python:3.11-slim-bookworm AS test
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1
 
 COPY requirements.txt requirements-dev.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -60,12 +69,12 @@ CMD ["pytest", "-q"]
 # ------------------------------------------------------------------------------
 # Stage 3: Final Production Runtime Image
 # ------------------------------------------------------------------------------
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim-bookworm AS runtime
 
-# Install system dependencies: ffmpeg (for audio/video multiplexing), curl (for HEALTHCHECK), ca-certificates
+# Install system dependencies: ffmpeg (for audio/video multiplexing), ca-certificates
+# (curl dropped; healthcheck uses Python stdlib urllib.request)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -74,6 +83,15 @@ RUN groupadd -g 10001 appgroup && \
     useradd -u 10001 -g appgroup -d /home/appuser -m -s /sbin/nologin appuser
 
 WORKDIR /app
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=5000 \
+    TMPDIR=/tmp \
+    HOME=/tmp \
+    XDG_CACHE_HOME=/tmp/.cache \
+    XDG_CONFIG_HOME=/tmp/.config
 
 # Install pinned Python dependencies
 COPY requirements.txt .
@@ -95,21 +113,11 @@ RUN chown -R appuser:appgroup /app /home/appuser
 # Switch to non-root user
 USER appuser
 
-# Runtime environment settings - routes all cache/config/temp writes to writable tmpfs (/tmp)
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=5000 \
-    TMPDIR=/tmp \
-    HOME=/tmp \
-    XDG_CACHE_HOME=/tmp/.cache \
-    XDG_CONFIG_HOME=/tmp/.config
-
 EXPOSE 5000
 
-# Container Healthcheck
+# Container Healthcheck using Python stdlib (no curl needed in runtime container)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://127.0.0.1:5000/healthz || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=3)" || exit 1
 
 # Production entrypoint with Gunicorn and Gevent worker class (single worker for in-memory token cache & rate limiter)
 CMD ["gunicorn", "--worker-class", "gevent", "--workers", "1", "--worker-connections", "1000", "--bind", "0.0.0.0:5000", "--timeout", "120", "--graceful-timeout", "30", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
-
