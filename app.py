@@ -448,6 +448,7 @@ def download_video():
             'token': token,
             'title': info.get('title', 'Media Download'),
             'thumbnail': info.get('thumbnail', ''),
+            'duration': info.get('duration', 0),
             'preview_format_id': preview_format_id,
             'original_url': video_url,
             'audio_formats': unique_audio,
@@ -479,35 +480,27 @@ def download_video():
 @limiter.limit(lambda: config.RATE_LIMIT_STREAM)
 def stream_download():
     token = request.args.get('token')
-    page_url = request.args.get('url')
     format_id = request.args.get('format_id', 'best')
     filename = request.args.get('filename', 'Jungle_Download')
     media_type = request.args.get('type', 'video')
 
-    info = None
-    if token:
-        cached = cache_store.get_metadata(token)
-        if not cached:
-            return jsonify({
-                "success": False,
-                "code": "SESSION_EXPIRED",
-                "error": "Download session expired. Please search again."
-            }), 410
-        info = cached.get("info")
-        page_url = cached.get("original_url")
-    elif page_url:
-        try:
-            validate_public_url(page_url)
-            info = fetch_fresh_metadata(page_url)
-        except Exception as e:
-            return jsonify({"success": False, "error": map_error_message(e)}), 400
-    else:
+    if not token:
         return jsonify({
             "success": False,
             "code": "SESSION_EXPIRED",
             "error": "Download session expired. Please search again."
         }), 410
 
+    cached = cache_store.get_metadata(token)
+    if not cached:
+        return jsonify({
+            "success": False,
+            "code": "SESSION_EXPIRED",
+            "error": "Download session expired. Please search again."
+        }), 410
+
+    info = cached.get("info")
+    page_url = cached.get("original_url")
     if not info:
         return jsonify({
             "success": False,
@@ -606,35 +599,27 @@ def stream_download():
 
 
 @app.route('/api/preview')
-@limiter.limit(lambda: config.RATE_LIMIT_STREAM)
+@limiter.limit(lambda: config.RATE_LIMIT_PREVIEW)
 def preview_video():
     token = request.args.get('token')
-    page_url = request.args.get('url')
     format_id = request.args.get('format_id', 'best')
 
-    info = None
-    if token:
-        cached = cache_store.get_metadata(token)
-        if not cached:
-            return jsonify({
-                "success": False,
-                "code": "SESSION_EXPIRED",
-                "error": "Preview session expired. Please search again."
-            }), 410
-        info = cached.get("info")
-    elif page_url:
-        try:
-            validate_public_url(page_url)
-            info = fetch_fresh_metadata(page_url)
-        except Exception as e:
-            return jsonify({"success": False, "error": map_error_message(e)}), 400
-    else:
+    if not token:
         return jsonify({
             "success": False,
             "code": "SESSION_EXPIRED",
-            "error": "Preview session expired or missing token."
+            "error": "Preview session expired. Please search again."
         }), 410
 
+    cached = cache_store.get_metadata(token)
+    if not cached:
+        return jsonify({
+            "success": False,
+            "code": "SESSION_EXPIRED",
+            "error": "Preview session expired. Please search again."
+        }), 410
+
+    info = cached.get("info")
     if not info:
         return jsonify({
             "success": False,

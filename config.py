@@ -82,6 +82,7 @@ class AppConfig:
 
     RATE_LIMIT_EXTRACT: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_EXTRACT", "10/minute;100/day"))
     RATE_LIMIT_STREAM: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_STREAM", "6/minute;40/day"))
+    RATE_LIMIT_PREVIEW: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_PREVIEW", "120/minute;1000/day"))
 
     TURNSTILE_SITE_KEY: str = field(default_factory=lambda: os.getenv("TURNSTILE_SITE_KEY", ""))
     TURNSTILE_SECRET: str = field(default_factory=lambda: os.getenv("TURNSTILE_SECRET", ""))

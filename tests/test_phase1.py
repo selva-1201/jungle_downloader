@@ -47,6 +47,47 @@ def test_preview_and_stream_session_expired_410(client):
     assert data_stream["code"] == "SESSION_EXPIRED"
 
 
+def test_stream_and_preview_raw_url_returns_410_no_ytdlp(client, mocker):
+    mock_extract = mocker.patch.object(yt_dlp.YoutubeDL, "extract_info")
+
+    # Raw url query param on stream returns 410 and never calls yt-dlp
+    resp_stream = client.get("/api/stream?url=https://www.pornhub.com/x&format_id=best")
+    assert resp_stream.status_code == 410
+    assert resp_stream.get_json()["code"] == "SESSION_EXPIRED"
+    mock_extract.assert_not_called()
+
+    # Raw url query param on preview returns 410 and never calls yt-dlp
+    resp_prev = client.get("/api/preview?url=https://www.pornhub.com/x&format_id=best")
+    assert resp_prev.status_code == 410
+    assert resp_prev.get_json()["code"] == "SESSION_EXPIRED"
+    mock_extract.assert_not_called()
+
+
+def test_preview_allows_over_ten_requests_per_minute(client, mocker):
+    fake_info = {
+        "id": "prev123",
+        "title": "Preview Video",
+        "formats": [{
+            "format_id": "18",
+            "vcodec": "avc1",
+            "acodec": "mp4a",
+            "url": "https://example.com/video.mp4",
+            "protocol": "https"
+        }]
+    }
+    token = cache_store.store_metadata(fake_info, "https://example.com/video")
+    mocker.patch("requests.get", return_value=mocker.MagicMock(
+        headers={},
+        iter_content=lambda chunk_size: iter([b"fake-bytes"])
+    ))
+
+    # Send 15 requests in a row - none should be rate limited (rate limit is 120/min)
+    for _ in range(15):
+        resp = client.get(f"/api/preview?token={token}&format_id=18")
+        assert resp.status_code != 429
+        assert resp.status_code == 200
+
+
 def test_api_download_generates_token_and_caches_info(client, mocker):
     mock_info = {
         "id": "vid123",
@@ -73,6 +114,7 @@ def test_api_download_generates_token_and_caches_info(client, mocker):
     data = resp.get_json()
     assert data["success"] is True
     assert "token" in data
+    assert data["duration"] == 120
     assert data["title"] == "Sample Jungle Clip"
 
     # Verify cached under the token

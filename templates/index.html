@@ -575,7 +575,35 @@
 
   <script>
     let currentMediaData = null;
+    let currentToken = null;
     let activeDownloads = new Set();
+    let isRefreshingToken = false;
+
+    async function ensureFreshToken() {
+      if (isRefreshingToken) return null;
+      isRefreshingToken = true;
+      try {
+        const inputUrl = (currentMediaData && currentMediaData.original_url) || document.getElementById('videoUrl').value.trim();
+        if (!inputUrl) return null;
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: inputUrl })
+        });
+        const data = await response.json();
+        if (data.success && data.token) {
+          currentMediaData = data;
+          currentToken = data.token;
+          renderMediaInterface(data);
+          return data.token;
+        }
+      } catch (e) {
+        console.error('Failed to refresh token', e);
+      } finally {
+        isRefreshingToken = false;
+      }
+      return null;
+    }
 
     const videoElement = document.getElementById('videoPreview');
     const audioElement = document.getElementById('audioPreview');
@@ -694,12 +722,13 @@
     }
 
     function renderMediaInterface(data) {
+      currentToken = data.token;
       const titleElement = document.getElementById('mediaTitle');
       titleElement.innerText = data.title;
       titleElement.classList.remove('hidden');
 
       if (data.preview_format_id) {
-        const previewUrl = `/api/preview?url=${encodeURIComponent(data.original_url)}&format_id=${encodeURIComponent(data.preview_format_id)}`;
+        const previewUrl = `/api/preview?token=${encodeURIComponent(data.token)}&format_id=${encodeURIComponent(data.preview_format_id)}`;
         videoElement.src = previewUrl;
 
         if (data.duration && data.duration > 0) {
@@ -719,7 +748,7 @@
         if (data.audio_formats && data.audio_formats.length > 0) {
           const firstAudio = data.audio_formats[0];
           if (firstAudio.format_id !== 'auto_extract') {
-            const audioPreviewUrl = `/api/preview?url=${encodeURIComponent(data.original_url)}&format_id=${encodeURIComponent(firstAudio.format_id)}`;
+            const audioPreviewUrl = `/api/preview?token=${encodeURIComponent(data.token)}&format_id=${encodeURIComponent(firstAudio.format_id)}`;
             audioElement.src = audioPreviewUrl;
           } else {
             audioElement.src = previewUrl;
@@ -735,7 +764,7 @@
 
       if (data.audio_formats && data.audio_formats.length > 0) {
         audioContainer.innerHTML = data.audio_formats
-          .map((item, idx) => buildDownloadRow(item, idx, 'audio', data.original_url, data.title))
+          .map((item, idx) => buildDownloadRow(item, idx, 'audio', data.token, data.title))
           .join('');
       } else {
         audioContainer.innerHTML = `
@@ -749,7 +778,7 @@
 
       if (data.video_formats && data.video_formats.length > 0) {
         videoContainer.innerHTML = data.video_formats
-          .map((item, idx) => buildDownloadRow(item, idx, 'video', data.original_url, data.title))
+          .map((item, idx) => buildDownloadRow(item, idx, 'video', data.token, data.title))
           .join('');
       } else {
         videoContainer.innerHTML = `
@@ -767,7 +796,7 @@
       handleResponsiveLayoutView();
     }
 
-    function buildDownloadRow(item, index, type, originalUrl, videoTitle) {
+    function buildDownloadRow(item, index, type, token, videoTitle) {
       const uniqueButtonId = `dl-btn-${type}-${index}`;
       const sanitizedTitle = videoTitle.replace(/[\\/*?:"<>|]/g, '_').trim();
       const defaultFilename = type === 'video'
@@ -785,7 +814,7 @@
               </div>
             </div>
             <button id="${uniqueButtonId}"
-                    data-url="${encodeURIComponent(originalUrl)}"
+                    data-token="${encodeURIComponent(token)}"
                     data-format-id="${encodeURIComponent(item.format_id)}"
                     data-filename="${encodeURIComponent(defaultFilename)}"
                     data-type="${type}"
@@ -808,7 +837,7 @@
     }
 
     function executeDownload(btn) {
-      const pageUrl = decodeURIComponent(btn.dataset.url);
+      const token = decodeURIComponent(btn.dataset.token || currentToken || '');
       const formatId = decodeURIComponent(btn.dataset.formatId);
       const filename = decodeURIComponent(btn.dataset.filename);
       const mediaType = btn.dataset.type;
@@ -829,7 +858,7 @@
       const progressBar = document.getElementById(`progress-${btnId}`);
       if (progressBar) progressBar.classList.remove('hidden');
 
-      const streamUrl = `/api/stream?url=${encodeURIComponent(pageUrl)}&format_id=${encodeURIComponent(formatId)}&filename=${encodeURIComponent(filename)}&type=${mediaType}`;
+      const streamUrl = `/api/stream?token=${encodeURIComponent(token)}&format_id=${encodeURIComponent(formatId)}&filename=${encodeURIComponent(filename)}&type=${mediaType}`;
 
       window.location.assign(streamUrl);
 
