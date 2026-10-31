@@ -36,7 +36,29 @@ RUN ARCH="${TARGETARCH:-$(dpkg --print-architecture)}" && \
     /usr/local/bin/tailwindcss -i static/css/input.css -o /build/static/css/app.css --minify -c tailwind.config.js
 
 # ------------------------------------------------------------------------------
-# Stage 2: Final Production Runtime Image
+# Stage 2: Automated Test Target (installs dev deps and runs pytest)
+# ------------------------------------------------------------------------------
+FROM python:3.11-slim AS test
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+COPY . .
+COPY --from=tailwind-builder /build/static/css/app.css /app/static/css/app.css
+
+CMD ["pytest", "-q"]
+
+# ------------------------------------------------------------------------------
+# Stage 3: Final Production Runtime Image
 # ------------------------------------------------------------------------------
 FROM python:3.11-slim AS runtime
 

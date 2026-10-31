@@ -22,7 +22,6 @@ __pycache__/
 
 # Testing & Artifacts
 .pytest_cache/
-tests/
 .coverage
 htmlcov/
 

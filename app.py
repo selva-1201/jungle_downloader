@@ -569,8 +569,7 @@ def download_video():
 
         if config.TURNSTILE_SECRET:
             clearance_tok = generate_clearance_token(client_ip)
-            is_secure = config.ENV in ("prod", "production")
-            resp.set_cookie("cf_clearance_token", clearance_tok, max_age=900, httponly=True, samesite="Lax", secure=is_secure)
+            resp.set_cookie("cf_clearance_token", clearance_tok, max_age=900, httponly=True, samesite="Lax", secure=config.IS_PROD)
 
         return resp
 

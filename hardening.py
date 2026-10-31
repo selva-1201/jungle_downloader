@@ -166,7 +166,7 @@ def apply_security_headers(response: Response) -> Response:
     h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
 
     # HSTS in production
-    if config.ENV == "prod":
+    if config.IS_PROD:
         h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # CSP in Report-Only mode

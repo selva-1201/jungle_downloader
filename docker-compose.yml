@@ -38,8 +38,9 @@ services:
         max-file: "3"
     networks:
       - jungle_net
+    volumes:
+      - ./data:/app/data:ro
     # Optional cookies file mount (read-only from outside the repo path if used):
-    # volumes:
     #   - /etc/jungle/cookies.txt:/etc/jungle/cookies.txt:ro
 
   caddy:

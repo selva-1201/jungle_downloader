@@ -15,7 +15,7 @@ COOKIE_MAX_AGE = 900  # 15 minutes
 
 def _get_secret_key() -> bytes:
     key = config.SECRET_KEY or os.getenv("SECRET_KEY", "")
-    if config.ENV in ("prod", "production") and not key:
+    if config.IS_PROD and not key:
         raise ValueError("SECRET_KEY environment variable is required in production.")
     if not key:
         key = "jungle-default-secret-change-in-prod"

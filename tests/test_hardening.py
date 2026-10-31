@@ -164,3 +164,27 @@ def test_apply_security_headers():
     assert secured.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
     assert "Content-Security-Policy-Report-Only" in secured.headers
 
+
+def test_is_prod_normalization_and_hsts(mocker):
+    from config import config
+
+    # 1. Test IS_PROD spellings and cases
+    for prod_val in ["prod", "production", "PROD", "Production"]:
+        mocker.patch.object(config, "ENV", prod_val)
+        assert config.IS_PROD is True, f"Failed for {prod_val}"
+
+    for non_prod in ["dev", "stage", "test", "local"]:
+        mocker.patch.object(config, "ENV", non_prod)
+        assert config.IS_PROD is False, f"Failed for {non_prod}"
+
+    # 2. HSTS present when ENV is production
+    mocker.patch.object(config, "ENV", "production")
+    resp_prod = apply_security_headers(Response("OK"))
+    assert "Strict-Transport-Security" in resp_prod.headers
+    assert resp_prod.headers["Strict-Transport-Security"] == "max-age=31536000; includeSubDomains"
+
+    # 3. HSTS absent in dev
+    mocker.patch.object(config, "ENV", "dev")
+    resp_dev = apply_security_headers(Response("OK"))
+    assert "Strict-Transport-Security" not in resp_dev.headers
+

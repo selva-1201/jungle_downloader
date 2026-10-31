@@ -53,6 +53,11 @@ class AppConfig:
 
     SITE_URL: str = field(default_factory=lambda: os.getenv("SITE_URL", "http://localhost:5000").rstrip("/"))
     ENV: str = field(default_factory=lambda: os.getenv("ENV", "dev").lower())
+
+    @property
+    def IS_PROD(self) -> bool:
+        return self.ENV.lower() in ("prod", "production")
+
     DEBUG: bool = field(default_factory=lambda: _get_bool("DEBUG", False))
     PORT: int = field(default_factory=lambda: _get_int("PORT", 5000))
     LOG_LEVEL: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO").upper())
