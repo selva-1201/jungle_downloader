@@ -257,6 +257,11 @@ def inject_template_globals():
         "site_url": config.SITE_URL.rstrip("/"),
         "display_count": cat.get("display_count", "1000+ sites"),
         "total_count": cat.get("total_count", 1000),
+        "legal_last_updated": config.LEGAL_LAST_UPDATED,
+        "contact_email": config.CONTACT_EMAIL,
+        "dmca_email": config.DMCA_EMAIL,
+        "ads_enabled": config.ADS_ENABLED,
+        "public_repo_url": config.PUBLIC_REPO_URL,
     }
 
 

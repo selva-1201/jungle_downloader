@@ -115,6 +115,8 @@ class AppConfig:
     CONTACT_EMAIL: str = field(default_factory=lambda: os.getenv("CONTACT_EMAIL", "support@jungle.local"))
     DMCA_EMAIL: str = field(default_factory=lambda: os.getenv("DMCA_EMAIL", "dmca@jungle.local"))
     BLOCKED_URLS_FILE: str = field(default_factory=lambda: os.getenv("BLOCKED_URLS_FILE", "data/blocked_urls.txt"))
+    LEGAL_LAST_UPDATED: str = field(default_factory=lambda: os.getenv("LEGAL_LAST_UPDATED", "October 2026"))
+    PUBLIC_REPO_URL: str = field(default_factory=lambda: os.getenv("PUBLIC_REPO_URL", ""))
 
 
 config = AppConfig()

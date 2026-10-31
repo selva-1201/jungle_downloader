@@ -196,3 +196,51 @@ def test_p10_tailwind_cdn_removal_a11y_seo(client):
     assert 'aria-label="Clear URL input"' in html
     assert 'role="dialog"' in html
     assert 'aria-modal="true"' in html
+
+
+def test_p11_legal_pages_truthful(client, monkeypatch):
+    import glob
+
+    # 1. The strings "never logs", "zero-logs", "100% safe" appear nowhere in templates
+    template_files = glob.glob("templates/**/*.html", recursive=True)
+    forbidden = ["never logs", "zero-logs", "100% safe"]
+    for t_file in template_files:
+        with open(t_file, "r", encoding="utf-8") as f:
+            content = f.read().lower()
+        for s in forbidden:
+            assert s not in content, f"Forbidden string '{s}' found in {t_file}"
+
+    # 2. Rendered privacy page mentions IP processing, Cloudflare, and contacts
+    resp = client.get("/privacy")
+    assert resp.status_code == 200
+    assert "ip address" in resp.text.lower()
+    assert "cloudflare" in resp.text.lower()
+    assert config.LEGAL_LAST_UPDATED in resp.text
+    assert config.CONTACT_EMAIL in resp.text
+
+    # 3. Terms mentions DMCA and rate limits
+    resp_terms = client.get("/terms")
+    assert resp_terms.status_code == 200
+    assert config.DMCA_EMAIL in resp_terms.text
+    assert "rate limit" in resp_terms.text.lower()
+
+    # 4. Ad text appears conditionally based on ADS_ENABLED
+    monkeypatch.setattr(config, "ADS_ENABLED", False)
+    resp_no_ads = client.get("/privacy")
+    assert "advertising is currently disabled" in resp_no_ads.text.lower()
+    assert "third-party ad networks" not in resp_no_ads.text
+
+    monkeypatch.setattr(config, "ADS_ENABLED", True)
+    resp_ads = client.get("/privacy")
+    assert "third-party ad networks" in resp_ads.text
+
+    # 5. Open source link conditional on PUBLIC_REPO_URL
+    monkeypatch.setattr(config, "PUBLIC_REPO_URL", "")
+    resp_no_repo = client.get("/terms")
+    assert ">Open Source<" not in resp_no_repo.text
+
+    monkeypatch.setattr(config, "PUBLIC_REPO_URL", "https://github.com/myorg/jungle")
+    resp_repo = client.get("/terms")
+    assert "https://github.com/myorg/jungle" in resp_repo.text
+    assert "Open Source" in resp_repo.text
+
