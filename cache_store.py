@@ -33,7 +33,7 @@ class CacheStore:
                 logger.warning(f"Failed to connect to Redis ({e}), falling back to in-memory TTLCache.")
                 self._redis_client = None
 
-    def store_metadata(self, info: Dict[str, Any], original_url: str) -> str:
+    def store_metadata(self, info: Dict[str, Any], original_url: str, proxy: Optional[str] = None) -> str:
         """
         Stores extracted info dict under an opaque random token.
         Returns the opaque token string.
@@ -42,6 +42,7 @@ class CacheStore:
         payload = {
             "token": token,
             "original_url": original_url,
+            "proxy": proxy,
             "created_at": time.time(),
             "info": info
         }

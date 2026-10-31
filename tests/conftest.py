@@ -41,8 +41,11 @@ def reset_limiter_and_semaphores():
 
     delivery.youtube_circuit_breaker.failures = 0
     delivery.youtube_circuit_breaker.last_failure_time = 0
+    delivery.proxy_router.site_backoffs.clear()
 
     yield
+
+    delivery.proxy_router.site_backoffs.clear()
 
     # Clean up after test
     try:

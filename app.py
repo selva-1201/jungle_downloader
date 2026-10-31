@@ -99,9 +99,10 @@ def is_fragmented(fmt):
     return ('m3u8' in protocol or 'dash' in protocol or '.m3u8' in url or '.mpd' in url)
 
 
-def fetch_fresh_metadata(video_url: str):
+def fetch_fresh_metadata(video_url: str, proxy_url: Optional[str] = None):
     extractor_name = blocklist_mgr.find_extractor_name(video_url) or "generic"
-    proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
+    if proxy_url is None:
+        proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
 
     ydl_opts = get_safe_ytdlp_opts({
         'quiet': True,
@@ -124,7 +125,7 @@ def fetch_fresh_metadata(video_url: str):
 
 
 # --- UNIVERSAL FFMPEG ENGINE ---
-def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
+def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only, proxy_url=None):
     CHUNK_SIZE = 1024 * 1024
     v_url = video_fmt.get('url') if video_fmt else None
     a_url = audio_fmt.get('url') if audio_fmt else None
@@ -140,7 +141,8 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
         is_audio_only=is_audio_only,
         max_duration=config.MAX_DURATION_SEC,
         headers_dict=v_headers,
-        audio_headers_dict=a_headers
+        audio_headers_dict=a_headers,
+        proxy_url=proxy_url
     )
 
     content_type = 'audio/mpeg' if is_audio_only else 'video/mp4'
@@ -179,6 +181,8 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only):
                 chunk = proc.stdout.read(CHUNK_SIZE)
                 if not chunk:
                     break
+                if proxy_url:
+                    proxy_router.record_proxied_bytes(len(chunk))
                 yield chunk
         except GeneratorExit:
             pass
@@ -234,6 +238,8 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
                     total_bytes += len(chunk)
                     if total_bytes > max_bytes:
                         break
+                    if proxy_url:
+                        proxy_router.record_proxied_bytes(len(chunk))
                     yield chunk
         except (ConnectionError, GeneratorExit):
             pass
@@ -374,6 +380,31 @@ def download_video():
     extractor_name = blocklist_mgr.find_extractor_name(video_url) or "generic"
     is_youtube = ("youtube" in video_url.lower()) or (extractor_name.lower().startswith("youtube"))
 
+    # YT_MODE checks
+    if is_youtube:
+        if config.YT_MODE == "disabled":
+            return jsonify({
+                'success': False,
+                'error': 'YouTube downloads are disabled.'
+            }), 400
+        if config.YT_MODE == "proxy":
+            yt_proxy = config.PROXY_RULES.get("youtube") or config.YTDLP_PROXY
+            if not yt_proxy or proxy_router.is_budget_exceeded():
+                return jsonify({
+                    'success': False,
+                    'error': 'YouTube is temporarily unavailable, other sites work'
+                }), 503
+
+    ext_lower = (extractor_name or "").lower()
+    requires_proxy = any(k.lower() == ext_lower for k in config.PROXY_RULES) or (is_youtube and config.YT_MODE == "proxy")
+    if requires_proxy and proxy_router.is_budget_exceeded():
+        return jsonify({
+            'success': False,
+            'error': 'YouTube is temporarily unavailable, other sites work' if is_youtube else 'Temporarily unavailable, other sites work'
+        }), 503
+
+    extraction_proxy = proxy_router.get_proxy_for_extractor(extractor_name)
+
     # 4. YouTube Circuit Breaker & Dedicated Semaphore
     acquired_yt = False
     if is_youtube:
@@ -414,7 +445,7 @@ def download_video():
                 'error': 'Site temporarily blocking us, try again later.'
             }), 429
 
-        info = fetch_fresh_metadata(video_url)
+        info = fetch_fresh_metadata(video_url, proxy_url=extraction_proxy)
         info = validate_extracted_urls(info)
         proxy_router.record_result(extractor_name, success=True)
         if is_youtube:
@@ -522,7 +553,7 @@ def download_video():
             preview_format_id = unique_video[0]['format_id']
 
         # Store in TTL Cache under single-extraction token
-        token = cache_store.store_metadata(info, video_url)
+        token = cache_store.store_metadata(info, video_url, proxy=extraction_proxy)
 
         resp = jsonify({
             'success': True,
@@ -627,6 +658,7 @@ def stream_download():
 
     needs_ffmpeg = (media_type == 'audio') or fragmented or (media_type == 'video' and not has_audio)
     active_semaphore = ffmpeg_semaphore if needs_ffmpeg else proxy_semaphore
+    proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(extractor_name)
 
     acquired = active_semaphore.acquire(blocking=True, timeout=10)
     if not acquired:
@@ -651,12 +683,12 @@ def stream_download():
     try:
         if needs_ffmpeg:
             if media_type == 'audio':
-                raw_gen, content_type = stream_universal_ffmpeg(target_format, None, is_audio_only=True)
+                raw_gen, content_type = stream_universal_ffmpeg(target_format, None, is_audio_only=True, proxy_url=proxy_url)
             else:
                 best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
                 if not best_audio:
                     best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
-                raw_gen, content_type = stream_universal_ffmpeg(target_format, best_audio, is_audio_only=False)
+                raw_gen, content_type = stream_universal_ffmpeg(target_format, best_audio, is_audio_only=False, proxy_url=proxy_url)
 
             base_headers['Content-Type'] = content_type
             wrapped_gen = ReleasingIterator(raw_gen, on_release=release_permit)
@@ -668,7 +700,6 @@ def stream_download():
 
         else:
             # Single progressive stream with both audio and video
-            proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
             raw_gen, content_type, content_length = stream_via_direct_url(target_format, media_type, proxy_url=proxy_url)
             base_headers['Content-Type'] = content_type
             if content_length:
@@ -730,6 +761,7 @@ def preview_video():
     is_video = preview_format.get('vcodec', 'none') != 'none'
     has_audio = preview_format.get('acodec', 'none') != 'none'
     fragmented = is_fragmented(preview_format)
+    proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(info.get('extractor', ''))
 
     if is_video and not has_audio:
         best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
@@ -737,7 +769,7 @@ def preview_video():
             best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
 
         if best_audio:
-            generator, content_type = stream_universal_ffmpeg(preview_format, best_audio, is_audio_only=False)
+            generator, content_type = stream_universal_ffmpeg(preview_format, best_audio, is_audio_only=False, proxy_url=proxy_url)
             return Response(generator, status=200, headers={
                 'Content-Type': content_type,
                 'X-Accel-Buffering': 'no',
@@ -746,7 +778,7 @@ def preview_video():
 
     if fragmented:
         is_audio_only_preview = not is_video
-        generator, content_type = stream_universal_ffmpeg(preview_format, None, is_audio_only=is_audio_only_preview)
+        generator, content_type = stream_universal_ffmpeg(preview_format, None, is_audio_only=is_audio_only_preview, proxy_url=proxy_url)
         return Response(generator, status=200, headers={
             'Content-Type': content_type,
             'X-Accel-Buffering': 'no',
@@ -760,8 +792,9 @@ def preview_video():
         if range_header:
             headers['Range'] = range_header
 
+        proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
         try:
-            r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30)
+            r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30, proxies=proxies)
         except SSRFValidationError as e:
             return jsonify({"success": False, "error": map_error_message(e)}), 400
 
@@ -780,6 +813,8 @@ def preview_video():
             try:
                 for chunk in r.iter_content(chunk_size=512 * 1024):
                     if chunk:
+                        if proxy_url:
+                            proxy_router.record_proxied_bytes(len(chunk))
                         yield chunk
             finally:
                 r.close()

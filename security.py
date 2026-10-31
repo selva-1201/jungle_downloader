@@ -300,7 +300,8 @@ def build_safe_ffmpeg_args(
     is_audio_only: bool = False,
     max_duration: int = 1200,
     headers_dict: Optional[Dict[str, str]] = None,
-    audio_headers_dict: Optional[Dict[str, str]] = None
+    audio_headers_dict: Optional[Dict[str, str]] = None,
+    proxy_url: Optional[str] = None
 ) -> List[str]:
     """
     Constructs an explicit, injection-safe ffmpeg command argument list.
@@ -316,6 +317,13 @@ def build_safe_ffmpeg_args(
         "-t", str(max_duration),
         "-max_muxing_queue_size", "1024"
     ]
+
+    if proxy_url:
+        if proxy_url.startswith("http://") or proxy_url.startswith("https://"):
+            ff_cmd.extend(["-http_proxy", proxy_url])
+        elif proxy_url.startswith("socks"):
+            import logging
+            logging.getLogger(__name__).warning("SOCKS proxy is not supported for ffmpeg; skipping -http_proxy.")
 
     def _format_headers(h_dict: Optional[Dict[str, str]]) -> str:
         if not h_dict:

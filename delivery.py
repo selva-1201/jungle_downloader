@@ -178,6 +178,15 @@ class ProxyRouter:
             self.current_date = today
             self.proxied_bytes_today = 0
 
+    def is_budget_exceeded(self) -> bool:
+        """Checks whether the daily proxied byte budget has been exhausted."""
+        self._check_and_rollover_day()
+        budget_gb = config.PROXIED_DAILY_BYTE_BUDGET_GB
+        if budget_gb > 0:
+            max_bytes = budget_gb * 1024 * 1024 * 1024
+            return self.proxied_bytes_today >= max_bytes
+        return False
+
     def get_proxy_for_extractor(self, extractor_name: str) -> Optional[str]:
         """
         Resolves proxy URL for a specific extractor based on PROXY_RULES and daily budget.
@@ -185,14 +194,11 @@ class ProxyRouter:
         self._check_and_rollover_day()
 
         # Check daily budget cap if set
-        budget_gb = config.PROXIED_DAILY_BYTE_BUDGET_GB
-        if budget_gb > 0:
-            max_bytes = budget_gb * 1024 * 1024 * 1024
-            if self.proxied_bytes_today >= max_bytes:
-                logger.warning(
-                    f"Proxied daily byte budget of {budget_gb} GB exceeded ({self.proxied_bytes_today} bytes). Routing direct."
-                )
-                return None
+        if self.is_budget_exceeded():
+            logger.warning(
+                f"Proxied daily byte budget of {config.PROXIED_DAILY_BYTE_BUDGET_GB} GB exceeded ({self.proxied_bytes_today} bytes). Routing direct."
+            )
+            return None
 
         # Per-extractor rules take highest precedence
         rules = config.PROXY_RULES
