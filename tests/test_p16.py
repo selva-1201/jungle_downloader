@@ -63,3 +63,4 @@ def test_host_setup_mirrors_by_invoking_script():
         content = f.read()
 
     assert "block_internal_egress.sh" in content
+

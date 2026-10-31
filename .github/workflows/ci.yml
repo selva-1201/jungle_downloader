@@ -48,3 +48,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
           tags: jungle-downloader:test
+

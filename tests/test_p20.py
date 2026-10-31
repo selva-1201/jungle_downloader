@@ -62,3 +62,4 @@ def test_error_pages_have_noindex(client):
         assert res_500.status_code == 500
         assert res_500.headers.get("X-Robots-Tag") == "noindex"
         assert '<meta name="robots" content="noindex">' in res_500.get_data(as_text=True)
+

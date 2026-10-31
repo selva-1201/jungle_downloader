@@ -51,3 +51,4 @@ def test_dockerfile_hardening_properties():
     # Healthcheck uses stdlib urllib without curl in runtime image
     assert "urllib.request" in content
     assert "http://127.0.0.1:5000/healthz" in content
+

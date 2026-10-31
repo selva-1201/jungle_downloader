@@ -71,3 +71,4 @@ def test_display_count_rounds_down_to_nearest_hundred():
     total = data["total_count"]
     expected_rounded = (total // 100) * 100
     assert data["display_count"] == f"{expected_rounded}+ sites"
+

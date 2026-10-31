@@ -26,3 +26,4 @@ build:
 
 smoke:
 	.venv/bin/python3 scripts/smoke_test.py
+

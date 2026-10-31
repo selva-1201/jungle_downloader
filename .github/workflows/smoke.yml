@@ -34,3 +34,4 @@ jobs:
         if: always()
         run: |
           echo "Smoke test completed with outcome: ${{ steps.smoke.outcome }}"
+

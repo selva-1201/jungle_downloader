@@ -50,3 +50,4 @@ if (typeof module !== 'undefined' && module.exports) {
     triggerDownloadFrame
   };
 }
+

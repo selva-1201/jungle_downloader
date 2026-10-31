@@ -82,3 +82,4 @@ if [[ ${#ALERTS[@]} -gt 0 ]]; then
     ALERT_MSG=$(printf "%s\n" "${ALERTS[@]}")
     send_alert "${ALERT_MSG}"
 fi
+

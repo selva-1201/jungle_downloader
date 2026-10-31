@@ -53,3 +53,4 @@ def test_deploy_md_imds_v2_and_cloudflare():
     assert "IMDSv2" in content
     assert "--are-legacy-imds-endpoints-disabled true" in content
     assert "deploy/cloudflare-ufw.sh" in content
+

@@ -96,3 +96,4 @@ All verification suites ran automatically and passed cleanly:
 - [x] **Adult & DRM Protection:** Filtered 100+ adult and DRM extractors; `ALLOW_ADULT=false` by default to protect ad-network compliance.
 - [x] **Transparent Legal Notices:** Accurate Terms of Service and Privacy Policy reflecting zero permanent media storage and Cloudflare processing.
 - [x] **Zero External CDN Runtime:** Standalone pre-compiled Tailwind CSS; no runtime CDN dependencies.
+
