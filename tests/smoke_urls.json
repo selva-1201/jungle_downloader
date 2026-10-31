@@ -18,5 +18,24 @@
   {
     "platform": "Archive_org",
     "url": "https://archive.org/details/BigBuckBunny_124"
+  },
+  {
+    "platform": "TikTok",
+    "url": "https://www.tiktok.com/@tiktok/video/7106594312292453678",
+    "expected_fail_on_datacenter": true
+  },
+  {
+    "platform": "Instagram",
+    "url": "https://www.instagram.com/reel/C-0K8xIsp2t/",
+    "expected_fail_on_datacenter": true
+  },
+  {
+    "platform": "Facebook",
+    "url": "https://www.facebook.com/watch/?v=10153231379946729"
+  },
+  {
+    "platform": "Reddit",
+    "url": "https://www.reddit.com/r/aww/comments/hd7mvo/the_rare_golden_retriever_otter/",
+    "expected_fail_on_datacenter": true
   }
 ]

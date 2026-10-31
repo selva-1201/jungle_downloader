@@ -12,14 +12,14 @@ DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspa
 def run_smoke_test(config_path: str = DEFAULT_CONFIG_PATH) -> bool:
     """
     Extracts metadata (download=False) for key platforms.
-    Reports pass/fail per site and returns overall success status.
+    Reports pass/fail per site and recognizes expected_fail_on_datacenter entries.
     """
     if not os.path.exists(config_path):
         print(f"Error: smoke test config file '{config_path}' not found.")
         return False
 
     with open(config_path, "r", encoding="utf-8") as f:
-        targets: List[Dict[str, str]] = json.load(f)
+        targets: List[Dict[str, Any]] = json.load(f)
 
     print(f"\n=======================================================")
     print(f"  Jungle Media Downloader — yt-dlp Smoke Test")
@@ -51,24 +51,29 @@ def run_smoke_test(config_path: str = DEFAULT_CONFIG_PATH) -> bool:
         for target in targets:
             platform = target.get("platform", "Unknown")
             url = target.get("url", "")
+            expected_fail = target.get("expected_fail_on_datacenter", False)
             start = time.time()
             try:
                 info = ydl.extract_info(url, download=False)
                 elapsed = time.time() - start
                 title = info.get("title", "No Title")[:35]
                 formats_count = len(info.get("formats", []))
-                print(f"  [PASS] {platform:12} ({elapsed:4.2f}s) | formats: {formats_count:2} | \"{title}\"")
-                results.append({"platform": platform, "success": True, "error": None})
+                print(f"  [PASS]          {platform:12} ({elapsed:4.2f}s) | formats: {formats_count:2} | \"{title}\"")
+                results.append({"platform": platform, "success": True, "error": None, "expected_fail": expected_fail})
             except Exception as e:
                 elapsed = time.time() - start
                 err_msg = str(e).split("\n")[0][:60]
-                print(f"  [FAIL] {platform:12} ({elapsed:4.2f}s) | error: {err_msg}")
-                results.append({"platform": platform, "success": False, "error": str(e)})
-                overall_pass = False
+                tag = "[EXPECTED_FAIL]" if expected_fail else "[FAIL]"
+                print(f"  {tag:15} {platform:12} ({elapsed:4.2f}s) | error: {err_msg}")
+                results.append({"platform": platform, "success": False, "error": str(e), "expected_fail": expected_fail})
+                if not expected_fail:
+                    overall_pass = False
 
     passed_count = sum(1 for r in results if r["success"])
+    expected_fail_count = sum(1 for r in results if not r["success"] and r.get("expected_fail"))
+    unexpected_fail_count = sum(1 for r in results if not r["success"] and not r.get("expected_fail"))
     total_count = len(results)
-    print(f"\nSummary: {passed_count}/{total_count} platforms operational.")
+    print(f"\nSummary: {passed_count}/{total_count} operational, {expected_fail_count} expected datacenter blocks, {unexpected_fail_count} unexpected failures.")
 
     return overall_pass
 
@@ -77,4 +82,3 @@ if __name__ == "__main__":
     cfg = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_CONFIG_PATH
     success = run_smoke_test(cfg)
     sys.exit(0 if success else 1)
-

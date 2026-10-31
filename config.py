@@ -70,9 +70,11 @@ class AppConfig:
     MAX_DURATION_SEC: int = field(default_factory=lambda: _get_int("MAX_DURATION_SEC", 1200))
     MAX_FILESIZE_MB: int = field(default_factory=lambda: _get_int("MAX_FILESIZE_MB", 500))
     PROXY_MAX_MB: int = field(default_factory=lambda: _get_int("PROXY_MAX_MB", 300))
+    DIRECT_LINK_MODE: str = field(default_factory=lambda: os.getenv("DIRECT_LINK_MODE", "large_only").lower())
 
     MAX_CONCURRENT_FFMPEG: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_FFMPEG", 3))
     MAX_CONCURRENT_EXTRACT: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_EXTRACT", 6))
+    MAX_CONCURRENT_YOUTUBE: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_YOUTUBE", 2))
     FFMPEG_TIMEOUT_SEC: int = field(default_factory=lambda: _get_int("FFMPEG_TIMEOUT_SEC", 900))
 
     RATE_LIMIT_EXTRACT: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_EXTRACT", "10/minute;100/day"))
@@ -84,6 +86,8 @@ class AppConfig:
     TRUST_CLOUDFLARE_IP: bool = field(default_factory=lambda: _get_bool("TRUST_CLOUDFLARE_IP", True))
 
     YT_MODE: str = field(default_factory=lambda: os.getenv("YT_MODE", "best_effort").lower())
+    YT_CIRCUIT_BREAKER_FAILURES: int = field(default_factory=lambda: _get_int("YT_CIRCUIT_BREAKER_FAILURES", 3))
+    YT_CIRCUIT_BREAKER_COOLDOWN_SEC: int = field(default_factory=lambda: _get_int("YT_CIRCUIT_BREAKER_COOLDOWN_SEC", 300))
     YTDLP_PROXY: str = field(default_factory=lambda: os.getenv("YTDLP_PROXY", ""))
     PROXY_RULES: Dict = field(default_factory=lambda: _get_json_dict("PROXY_RULES", {}))
     PROXIED_DAILY_BYTE_BUDGET_GB: int = field(default_factory=lambda: _get_int("PROXIED_DAILY_BYTE_BUDGET_GB", 0))

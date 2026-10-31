@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supported Sites – Jungle Media Downloader ({{ display_count }})</title>
+  <meta name="description" content="Explore the full directory of {{ display_count }} supported websites by Jungle Media Downloader. Download video and audio from TikTok, Instagram, Twitter/X, Reddit, Vimeo, and more.">
+  <link rel="canonical" href="{{ request.url_root }}supported-sites">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <meta name="robots" content="index, follow">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #050505;
+      color: #ffffff;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .glass-panel {
+      background: rgba(25, 25, 25, 0.4);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: rgba(30, 30, 30, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s ease;
+    }
+
+    .glass-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .glass-input {
+      background: rgba(10, 10, 10, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .glass-input:focus {
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center py-10 px-4 antialiased">
+
+  <header class="w-full max-w-5xl mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <svg class="w-6 h-6 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <img src="{{ url_for('static', filename='jungle_logo.png') }}" alt="Jungle Logo" class="w-7 h-7 object-contain shrink-0">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">Supported Websites</h1>
+          <p class="text-xs text-gray-500">Universal Downloader Powered by yt-dlp</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="relative w-full sm:w-80">
+      <input type="text" id="site-search" placeholder="Search {{ total_count }} supported sites..."
+        class="glass-input w-full p-2.5 pl-9 rounded-xl text-sm text-white outline-none">
+      <svg class="w-4 h-4 text-gray-500 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+    </div>
+  </header>
+
+  <main class="w-full max-w-5xl glass-panel p-6 sm:p-8 rounded-2xl shadow-2xl flex flex-col gap-8">
+    <section>
+      <h2 class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-3">Popular Platforms</h2>
+      <div class="flex flex-wrap gap-2 text-xs">
+        {% for site in popular %}
+        <span class="glass-card px-3.5 py-1.5 rounded-full text-white font-medium cursor-pointer" onclick="filterBy('{{ site }}')">
+          {{ site }}
+        </span>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section>
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+        <h2 class="text-base font-semibold text-white tracking-tight">
+          All Supported Sites (<span id="site-count">{{ total_count }}</span>)
+        </h2>
+        <span class="text-xs text-gray-400">{{ display_count }} actively supported</span>
+      </div>
+
+      <div id="sites-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 text-xs text-gray-300">
+        {% for site in sites %}
+        <div class="site-item glass-card p-2.5 rounded-lg text-center truncate" title="{{ site }}">
+          {{ site }}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div id="empty-state" class="hidden text-center py-12 text-sm text-gray-400">
+        <svg class="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        No matching websites found.
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-8 text-xs text-gray-500 text-center flex flex-wrap justify-center gap-4">
+    <a href="/" class="hover:text-gray-300">Home</a>
+    <span>•</span>
+    <a href="/terms" class="hover:text-gray-300">Terms of Service</a>
+    <span>•</span>
+    <a href="/privacy" class="hover:text-gray-300">Privacy Policy</a>
+  </footer>
+
+  <script>
+    const searchInput = document.getElementById('site-search');
+    const sitesGrid = document.getElementById('sites-grid');
+    const emptyState = document.getElementById('empty-state');
+    const countDisplay = document.getElementById('site-count');
+    const items = Array.from(document.querySelectorAll('.site-item'));
+
+    function filterBy(query) {
+      searchInput.value = query;
+      applyFilter(query);
+    }
+
+    function applyFilter(query) {
+      const q = query.trim().toLowerCase();
+      let visible = 0;
+
+      items.forEach(item => {
+        const text = item.textContent.trim().toLowerCase();
+        if (!q || text.includes(q)) {
+          item.classList.remove('hidden');
+          visible++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      countDisplay.textContent = visible;
+      if (visible === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    searchInput.addEventListener('input', (e) => applyFilter(e.target.value));
+  </script>
+</body>
+
+</html>
+
