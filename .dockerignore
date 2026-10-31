@@ -1,0 +1,32 @@
+# Version control
+.git/
+.gitignore
+
+# Environment & Secrets
+.env
+.env.*
+cookies.txt
+*.cookies
+*.pem
+*.key
+*.crt
+
+# Virtual Environments & Python cache
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Artifacts
+.pytest_cache/
+tests/
+.coverage
+htmlcov/
+
+# Documentation & Plan
+docs/
+PLAN.md
+

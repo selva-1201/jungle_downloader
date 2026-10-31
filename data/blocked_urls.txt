@@ -1,0 +1,3 @@
+# Exact URLs or patterns blocked for DMCA takedown requests
+# Hot-reloaded on file modification time (mtime) change.
+

@@ -1,0 +1,3 @@
+# Administrative & DMCA blocked domains (one domain per line, e.g. pirate-stream.example.com)
+# Hot-reloaded on file modification time (mtime) change.
+

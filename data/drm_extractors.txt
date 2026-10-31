@@ -1,0 +1,16 @@
+# DRM-only streaming services to exclude from supported sites
+netflix
+spotify
+disney
+disneyplus
+hulu
+appletv
+amazonprime
+primevideo
+hbomax
+max
+peacock
+paramountplus
+crunchyroll
+deezer
+
