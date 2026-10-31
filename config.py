@@ -74,6 +74,7 @@ class AppConfig:
     CACHE_BACKEND: str = field(default_factory=lambda: os.getenv("CACHE_BACKEND", "memory").lower())
     REDIS_URL: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379/0"))
     META_CACHE_TTL: int = field(default_factory=lambda: _get_int("META_CACHE_TTL", 1500))
+    CACHE_MAXSIZE: int = field(default_factory=lambda: _get_int("CACHE_MAXSIZE", 300))
 
     MAX_DURATION_SEC: int = field(default_factory=lambda: _get_int("MAX_DURATION_SEC", 1200))
     MAX_FILESIZE_MB: int = field(default_factory=lambda: _get_int("MAX_FILESIZE_MB", 500))

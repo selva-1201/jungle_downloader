@@ -1,13 +1,18 @@
+from collections import OrderedDict
 import os
+import threading
 import urllib.parse
 from typing import Optional, Set, Tuple
 import yt_dlp
 from config import config
 
+MAX_URL_LENGTH = 2048
+
 
 class BlocklistManager:
     """
     Manages adult extractor filtering and hot-reloading domain/URL blocklists.
+    Caches extractor resolution per URL and per hostname for ultra-fast matching.
     """
 
     def __init__(
@@ -29,6 +34,11 @@ class BlocklistManager:
             "domains": 0.0,
             "urls": 0.0
         }
+
+        # LRU caches for extractor matching
+        self._url_extractor_cache: OrderedDict[str, Optional[str]] = OrderedDict()
+        self._host_extractor_cache: OrderedDict[str, str] = OrderedDict()
+        self._cache_lock = threading.Lock()
 
         # Shared YoutubeDL instance for fast extractor matching without network calls
         self._ydl = yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True})
@@ -72,20 +82,70 @@ class BlocklistManager:
                 self._mtimes["urls"] = mtime
 
     def find_extractor_name(self, url: str) -> Optional[str]:
-        """Finds the matching yt-dlp extractor name without network access."""
+        """
+        Finds the matching yt-dlp extractor name without network access.
+        Caches results per URL and per hostname to avoid scanning ~1800 regexes repeatedly.
+        Caps URL length to prevent ReDoS on malicious inputs.
+        """
+        if not url or len(url) > MAX_URL_LENGTH:
+            return None
+
+        clean_url = url.strip()
+
+        with self._cache_lock:
+            if clean_url in self._url_extractor_cache:
+                return self._url_extractor_cache[clean_url]
+
+        parsed = urllib.parse.urlsplit(clean_url)
+        hostname = (parsed.hostname or "").lower()
+
+        # Fast path: check if this hostname has a known matching extractor
+        if hostname:
+            with self._cache_lock:
+                cached_ie_name = self._host_extractor_cache.get(hostname)
+            if cached_ie_name:
+                ie = self._ydl._ies.get(cached_ie_name)
+                if ie and ie.suitable(clean_url):
+                    with self._cache_lock:
+                        if len(self._url_extractor_cache) >= 1024:
+                            self._url_extractor_cache.popitem(last=False)
+                        self._url_extractor_cache[clean_url] = ie.IE_NAME
+                    return ie.IE_NAME
+
+        # Fallback: scan all registered extractors
         for ie in self._ydl._ies.values():
-            if ie.suitable(url):
+            if ie.suitable(clean_url):
+                with self._cache_lock:
+                    if hostname:
+                        if len(self._host_extractor_cache) >= 500:
+                            self._host_extractor_cache.popitem(last=False)
+                        self._host_extractor_cache[hostname] = ie.IE_NAME
+                    if len(self._url_extractor_cache) >= 1024:
+                        self._url_extractor_cache.popitem(last=False)
+                    self._url_extractor_cache[clean_url] = ie.IE_NAME
                 return ie.IE_NAME
+
+        with self._cache_lock:
+            if len(self._url_extractor_cache) >= 1024:
+                self._url_extractor_cache.popitem(last=False)
+            self._url_extractor_cache[clean_url] = None
         return None
 
     def is_url_blocked(self, url: str, allow_adult: Optional[bool] = None) -> Tuple[bool, str]:
         """
         Evaluates whether a given URL is permitted.
         Returns (is_blocked, rejection_reason).
+        Performs fast domain checks before regex extractor matching.
         """
         self.reload_if_modified()
         if allow_adult is None:
             allow_adult = config.ALLOW_ADULT
+
+        if not url:
+            return True, "Invalid URL structure."
+
+        if len(url) > MAX_URL_LENGTH:
+            return True, "URL exceeds maximum permitted length."
 
         clean_url = url.strip()
         lower_url = clean_url.lower()
@@ -94,7 +154,7 @@ class BlocklistManager:
         if lower_url in self._blocked_urls or clean_url in self._blocked_urls:
             return True, "This link has been removed pursuant to a DMCA takedown notice or administrative request."
 
-        # 2. Domain / parent-domain match
+        # 2. Domain / parent-domain match (before extractor matching)
         try:
             parsed = urllib.parse.urlsplit(clean_url)
             hostname = (parsed.hostname or "").lower()
@@ -107,7 +167,7 @@ class BlocklistManager:
         except Exception:
             return True, "Invalid URL structure."
 
-        # 3. Match against yt-dlp extractors
+        # 3. Match against yt-dlp extractors (cached lookup)
         ie_name = self.find_extractor_name(clean_url)
         if not ie_name:
             if not config.ALLOW_GENERIC:
@@ -128,6 +188,5 @@ class BlocklistManager:
         return False, ""
 
 
-# Singleton blocklist manager
+# Singleton blocklist manager instance
 blocklist_manager = BlocklistManager()
-

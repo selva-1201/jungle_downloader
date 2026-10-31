@@ -28,7 +28,7 @@ from security import (
     safe_requests_get,
     validate_extracted_urls,
 )
-from blocklist import BlocklistManager
+from blocklist import blocklist_manager
 from hardening import (
     get_real_client_ip,
     sanitize_filename,
@@ -61,7 +61,7 @@ app = Flask(__name__)
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-blocklist_mgr = BlocklistManager()
+
 
 
 def get_limiter_client_ip():
@@ -142,7 +142,7 @@ def is_fragmented(fmt):
 
 
 def fetch_fresh_metadata(video_url: str, proxy_url: Optional[str] = None):
-    extractor_name = blocklist_mgr.find_extractor_name(video_url) or "generic"
+    extractor_name = blocklist_manager.find_extractor_name(video_url) or "generic"
     if proxy_url is None:
         proxy_url = proxy_router.get_proxy_for_extractor(extractor_name)
 
@@ -451,7 +451,7 @@ def download_video():
                 }), 403
 
     # 2. Blocklist Enforcement (fast offline check before DNS resolution)
-    is_blocked, reason = blocklist_mgr.is_url_blocked(video_url)
+    is_blocked, reason = blocklist_manager.is_url_blocked(video_url)
     if is_blocked:
         return jsonify({'success': False, 'error': reason}), 400
 
@@ -469,7 +469,7 @@ def download_video():
             'error': map_error_message(e)
         }), 400
 
-    extractor_name = blocklist_mgr.find_extractor_name(video_url) or "generic"
+    extractor_name = blocklist_manager.find_extractor_name(video_url) or "generic"
     g.extractor = extractor_name
     extractor_counters[extractor_name] += 1
     is_youtube = ("youtube" in video_url.lower()) or (extractor_name.lower().startswith("youtube"))
