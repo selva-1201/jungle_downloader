@@ -1,5 +1,6 @@
 import pytest
 from app import app
+from config import config
 
 
 @pytest.fixture
@@ -159,3 +160,39 @@ def test_download_flow_cookie_polling_and_iframe(client):
     assert "clearDownloadCookie" in js_content
     assert "buildStreamUrl" in js_content
     assert "triggerDownloadFrame" in js_content
+
+
+def test_p10_tailwind_cdn_removal_a11y_seo(client):
+    import glob
+    import json
+    from sites_catalog import sites_catalog
+
+    # 1. No template contains cdn.tailwindcss.com
+    template_files = glob.glob("templates/**/*.html", recursive=True)
+    assert len(template_files) >= 5
+    for t_file in template_files:
+        with open(t_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert "cdn.tailwindcss.com" not in content, f"Found cdn.tailwindcss.com in {t_file}"
+
+    # 2. Canonical uses SITE_URL
+    resp = client.get("/")
+    assert resp.status_code == 200
+    html = resp.text
+    assert f'<link rel="canonical" href="{config.SITE_URL}/">' in html
+
+    # 3. Dynamic display count appears and "1800" is absent
+    display_count = sites_catalog.catalog["display_count"]
+    assert display_count in html
+    assert "1800" not in html
+
+    # 4. Manifest icon URLs start with /static/
+    with open("static/site.webmanifest", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    for icon in manifest.get("icons", []):
+        assert icon["src"].startswith("/static/"), f"Icon path {icon['src']} does not start with /static/"
+
+    # 5. Accessibility basics
+    assert 'aria-label="Clear URL input"' in html
+    assert 'role="dialog"' in html
+    assert 'aria-modal="true"' in html

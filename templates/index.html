@@ -5,16 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free</title>
-  <meta name="title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
+  <title>Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free</title>
+  <meta name="title" content="Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free">
   <meta name="description"
-    content="Jungle Media Downloader is a free, open-source utility. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and 1800+ more sites. No login required. MP4 & MP3 supported.">
+    content="Jungle Media Downloader is a free, open-source utility. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and {{ display_count }} more. No login required. MP4 & MP3 supported.">
   <meta name="keywords" content="
-    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, 1800 sites video downloader, multi site video downloader
+    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, multi site video downloader
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
-  <link rel="canonical" href="{{ request.url_root }}">
+  <link rel="canonical" href="{{ site_url }}/">
 
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
@@ -24,18 +24,18 @@
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="{{ request.url_root }}">
-  <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from 1800+ Sites Free">
+  <meta property="og:url" content="{{ site_url }}/">
+  <meta property="og:title" content="Jungle Media Downloader – Download Videos & Audio from {{ display_count }} Free">
   <meta property="og:description"
-    content="Free, open-source video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and 1800+ more. No sign-in needed. Download MP4 & MP3 instantly.">
+    content="Free, open-source video and audio downloader. Works with YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, SoundCloud and {{ display_count }} more. No sign-in needed. Download MP4 & MP3 instantly.">
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
   <meta property="og:site_name" content="Jungle Media Downloader">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="{{ request.url_root }}">
-  <meta name="twitter:title" content="Jungle Media Downloader – Download from 1800+ Sites">
+  <meta name="twitter:url" content="{{ site_url }}/">
+  <meta name="twitter:title" content="Jungle Media Downloader – Download from {{ display_count }}">
   <meta name="twitter:description"
-    content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and 1800+ more sites. MP4 & MP3.">
+    content="Free, no-login video & audio downloader. YouTube, TikTok, Instagram, X, Facebook and {{ display_count }} more. MP4 & MP3.">
   <meta name="twitter:image" content="{{ url_for('static', filename='og-image.png') }}">
 
   <script type="application/ld+json">
@@ -43,8 +43,8 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Jungle Media Downloader",
-    "url": "{{ request.url_root }}",
-    "description": "Free open-source media downloader supporting 1800+ websites. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
+    "url": "{{ site_url }}/",
+    "description": "Free open-source media downloader supporting {{ display_count }}. Download videos and audio from YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion and more. No login required.",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "Any",
     "offers": {
@@ -53,7 +53,7 @@
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Download videos from 1800+ websites",
+      "Download videos from {{ display_count }}",
       "Convert video to MP3 audio",
       "No login or account required",
       "Open source",
@@ -64,7 +64,7 @@
   }
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   {% if turnstile_site_key %}
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
   {% endif %}
@@ -78,6 +78,11 @@
       background-color: #050505;
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
+    }
+
+    :focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.6);
+      outline-offset: 2px;
     }
 
     .glass-panel {
@@ -247,7 +252,7 @@
       </div>
     </div>
 
-    <button onclick="toggleTrickModal(true)"
+    <button onclick="toggleTrickModal(true)" aria-label="WhatsApp status save trick"
       class="hidden md:flex flex-row items-center gap-2 px-4 py-2 text-white font-extrabold text-[11px] uppercase tracking-wider cursor-pointer bg-zinc-900/90 border border-[#25D366]/30 rounded-xl shadow-[0_0_15px_rgba(37,211,102,0.25)] hover:shadow-[0_0_22px_rgba(37,211,102,0.5)] transition-all active:scale-95 shrink-0">
       <svg class="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
         <path
@@ -262,11 +267,11 @@
     <div class="glass-panel p-2 rounded-2xl shadow-2xl mb-6 flex flex-col md:flex-row gap-2">
       <div class="relative flex-1 flex items-center">
         <input type="text" id="videoUrl" placeholder="Paste a YouTube, Instagram, TikTok, Twitter/X, Facebook URL..."
-          class="glass-input w-full p-4 pr-12 rounded-xl text-white outline-none placeholder-gray-500"
+          class="glass-input w-full p-4 pr-12 rounded-xl text-white outline-none placeholder-gray-400"
           oninput="toggleClearButton()" onkeydown="if(event.key==='Enter') fetchMedia()">
 
-        <button id="btnClearUrl" onclick="clearUrlInput()"
-          class="absolute right-4 hidden text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-lg">
+        <button id="btnClearUrl" onclick="clearUrlInput()" aria-label="Clear URL input"
+          class="absolute right-4 hidden text-gray-400 hover:text-gray-300 transition-colors p-1 rounded-lg">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -512,7 +517,7 @@
             </svg>
           </summary>
           <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader is powered by the popular yt-dlp
-            automation infrastructure engine, extending support to over 1800+ streaming sites worldwide. Major
+            automation infrastructure engine, extending support to over {{ display_count }} worldwide. Major
             compatible networks include YouTube, Instagram Reels, TikTok, Twitter/X, Facebook, Vimeo, Reddit, and
             hundreds of regional media hosts.</p>
         </details>
@@ -534,20 +539,20 @@
 
   </main>
 
-  <div id="trickModal"
+  <div id="trickModal" role="dialog" aria-modal="true" aria-labelledby="trickModalTitle"
     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
     <div
       class="glass-panel w-full max-w-xs sm:max-w-sm md:max-w-md p-5 sm:p-6 md:p-7 rounded-xl relative border border-white/5 bg-zinc-950/90 shadow-2xl transition-all">
 
-      <button onclick="toggleTrickModal(false)"
-        class="absolute top-3.5 right-3.5 text-zinc-600 hover:text-zinc-400 transition-colors p-1 rounded-lg">
+      <button onclick="toggleTrickModal(false)" aria-label="Close modal"
+        class="absolute top-3.5 right-3.5 text-zinc-400 hover:text-zinc-200 transition-colors p-1 rounded-lg">
         <svg class="w-4 h-4 sm:w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
 
       <div class="flex flex-col gap-3.5 sm:gap-4 font-mono text-zinc-400 pt-3 text-center">
-        <span class="text-zinc-500 font-semibold uppercase tracking-wider text-[10px] sm:text-xs">
+        <span id="trickModalTitle" class="text-zinc-400 font-semibold uppercase tracking-wider text-[10px] sm:text-xs">
           Open your file manager and follow this instruction:
         </span>
 
@@ -862,6 +867,7 @@
                     data-format-id="${encodeURIComponent(item.format_id)}"
                     data-filename="${encodeURIComponent(defaultFilename)}"
                     data-type="${type}"
+                    aria-label="Download ${item.format} ${item.quality}"
                     onclick="executeDownload(this)"
                     class="download-btn p-3 hover:bg-white/10 text-gray-300 rounded-xl transition-all cursor-pointer border border-white/5 active:scale-95 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed">
               <svg class="w-5 h-5 icon-dl-static" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1051,6 +1057,16 @@
     window.addEventListener('resize', () => {
       if (currentMediaData) handleResponsiveLayoutView();
     });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggleTrickModal(false);
+        const supportedComp = document.querySelector('supported-sites');
+        if (supportedComp && typeof supportedComp.closeModal === 'function') {
+          supportedComp.closeModal();
+        }
+      }
+    });
   </script>
 
   <script>
@@ -1069,7 +1085,7 @@
              <h2 class="text-lg font-semibold text-gray-300 mb-3">Jungle Supported Sites</h2>
 
           <p class="text-sm text-gray-400 mb-4">
-            Supports <strong class="text-white" id="sites-display-count">1000+ websites</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> or <a href="/supported-sites" class="underline hover:text-white">browse the full directory</a> to check if your desired site is available.
+            Supports <strong class="text-white" id="sites-display-count">{{ display_count }}</strong> via yt-dlp.<br/>Click <strong class="text-gray-400">"+ More Sites"</strong> or <a href="/supported-sites" class="underline hover:text-white">browse the full directory</a> to check if your desired site is available.
           </p>
 
             <div class="flex flex-wrap items-center gap-2 text-xs text-white-600">
@@ -1080,12 +1096,12 @@
             </div>
           </section>
 
-          <div id="sites-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
+          <div id="sites-modal" role="dialog" aria-modal="true" aria-labelledby="sitesModalTitle" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
             <div class="glass-panel w-full max-w-3xl h-[80vh] flex flex-col p-6 rounded-2xl relative border border-white/10 bg-zinc-950/95 shadow-2xl">
 
               <div class="flex justify-between items-start mb-2 shrink-0">
-                <h3 class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supported Sites</h3>
-                <button id="close-modal-btn" class="text-zinc-500 hover:text-zinc-300 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer">
+                <h3 id="sitesModalTitle" class="text-xl font-bold text-white tracking-tight">Jungle Media Downloader Supported Sites</h3>
+                <button id="close-modal-btn" aria-label="Close modal" class="text-zinc-400 hover:text-zinc-200 transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg cursor-pointer">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>

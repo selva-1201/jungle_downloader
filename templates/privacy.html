@@ -12,7 +12,8 @@
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
   <link rel="image_src" href="{{ url_for('static', filename='jungle_logo.png') }}">
   <meta name="robots" content="index, follow">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="canonical" href="{{ site_url }}/privacy">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
@@ -23,6 +24,7 @@
       color: #ffffff;
       font-family: 'Space Grotesk', sans-serif;
     }
+    :focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
 
     .glass-panel {
       background: rgba(25, 25, 25, 0.4);

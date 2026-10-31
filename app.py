@@ -250,6 +250,16 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
 
 
 # --- STATIC & LEGAL PAGES ---
+@app.context_processor
+def inject_template_globals():
+    cat = sites_catalog.catalog
+    return {
+        "site_url": config.SITE_URL.rstrip("/"),
+        "display_count": cat.get("display_count", "1000+ sites"),
+        "total_count": cat.get("total_count", 1000),
+    }
+
+
 @app.route('/')
 def index():
     return render_template('index.html', turnstile_site_key=config.TURNSTILE_SITE_KEY)
