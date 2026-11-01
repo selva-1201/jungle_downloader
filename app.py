@@ -155,10 +155,12 @@ def fetch_fresh_metadata(video_url: str, proxy_url: Optional[str] = None):
     if config.COOKIES_FILE and os.path.exists(config.COOKIES_FILE):
         ydl_opts['cookiefile'] = config.COOKIES_FILE
 
-    if "youtube" in video_url.lower() or extractor_name.lower().startswith("youtube"):
-        ydl_opts['extractor_args'] = {
-            'youtube': {'player_client': ['android', 'web']}
-        }
+    if ("youtube" in video_url.lower() or extractor_name.lower().startswith("youtube")) and config.YT_PLAYER_CLIENTS:
+        clients = [c.strip() for c in config.YT_PLAYER_CLIENTS.split(",") if c.strip()]
+        if clients:
+            ydl_opts['extractor_args'] = {
+                'youtube': {'player_client': clients}
+            }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(video_url, download=False)

@@ -14,7 +14,7 @@ urllib3==2.7.0
 Werkzeug==3.1.8
 gevent==26.4.0
 redis==5.2.1
-yt-dlp==2026.10.26
+yt-dlp[default]==2026.10.26
 Flask-Limiter==4.1.1
 cachetools==7.2.7
 limits==5.8.0

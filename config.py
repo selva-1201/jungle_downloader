@@ -106,6 +106,7 @@ class AppConfig:
 
 
     YT_MODE: str = field(default_factory=lambda: os.getenv("YT_MODE", "best_effort").lower())
+    YT_PLAYER_CLIENTS: str = field(default_factory=lambda: os.getenv("YT_PLAYER_CLIENTS", "").strip())
     YT_CIRCUIT_BREAKER_FAILURES: int = field(default_factory=lambda: _get_int("YT_CIRCUIT_BREAKER_FAILURES", 3))
     YT_CIRCUIT_BREAKER_COOLDOWN_SEC: int = field(default_factory=lambda: _get_int("YT_CIRCUIT_BREAKER_COOLDOWN_SEC", 300))
     YTDLP_PROXY: str = field(default_factory=lambda: os.getenv("YTDLP_PROXY", ""))

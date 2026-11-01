@@ -20,6 +20,10 @@ Powered by **Flask**, **gevent**, **yt-dlp**, **ffmpeg**, and **Caddy**.
   - IPv6 client addresses are normalized to their `/64` subnet string (`2001:db8:1:2::/64`), preventing abuse by users rotating ephemeral SLAAC/privacy addresses.
   - IPv4-mapped IPv6 addresses (`::ffff:192.0.2.1`) are normalized to standard IPv4.
   - CGNAT trade-off: Carrier-Grade NAT (CGNAT) pools share a single public IPv4 address across many mobile or residential users, causing them to share rate limit buckets. All rate limits are env-tunable (`RATE_LIMIT_EXTRACT`, `RATE_LIMIT_STREAM`, `RATE_LIMIT_PREVIEW`) to balance bot protection with shared IP access.
+- **YouTube Extraction Realities & Datacenter IP Blocking**:
+  - YouTube aggressively throttles or blocks requests originating from cloud and datacenter IP blocks (AWS, OCI, Hetzner, etc.), demanding bot-check challenges or returning HTTP 429.
+  - The runtime container includes Node.js as an external JavaScript runtime alongside `yt-dlp[default]` to solve challenges.
+  - In public cloud deployments without residential or rotating proxies (`YTDLP_PROXY` or `PROXY_RULES`), direct YouTube downloads may fail. Operators should run the smoke test (`python scripts/smoke_test.py`); if smoke testing fails due to datacenter IP blocks, set `YT_MODE=disabled` in `.env` until a residential proxy is configured.
 
 ---
 

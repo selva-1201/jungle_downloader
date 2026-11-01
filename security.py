@@ -443,6 +443,7 @@ def get_safe_ytdlp_opts(extra_opts: Optional[Dict] = None) -> Dict:
         "quiet": True,
         "no_warnings": True,
         "socket_timeout": 15,
+        "js_runtimes": {"deno": {}, "node": {}, "quickjs": {}},
     }
 
     if not config.ALLOW_GENERIC:

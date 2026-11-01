@@ -50,6 +50,7 @@ FROM python:3.11-slim-bookworm AS test
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -71,11 +72,12 @@ CMD ["pytest", "-q"]
 # ------------------------------------------------------------------------------
 FROM python:3.11-slim-bookworm AS runtime
 
-# Install system dependencies: ffmpeg (for audio/video multiplexing), ca-certificates
+# Install system dependencies: ffmpeg (for audio/video multiplexing), ca-certificates, nodejs (JS runtime for yt-dlp)
 # (curl dropped; healthcheck uses Python stdlib urllib.request)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Create dedicated non-root user and group

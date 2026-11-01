@@ -246,8 +246,14 @@ APP_CPUS=2.0
 
 # YouTube Mode
 YT_MODE=best_effort
+YT_PLAYER_CLIENTS=
 YT_CIRCUIT_BREAKER_FAILURES=3
 YT_CIRCUIT_BREAKER_COOLDOWN_SEC=300
+
+# Note on YouTube Extraction in Datacenters:
+# Datacenter IPs are frequently blocked by YouTube (HTTP 429). The container includes Node.js
+# for yt-dlp's JS engine. If smoke tests fail on YouTube, set YT_MODE=disabled until a residential
+# proxy (YTDLP_PROXY / PROXY_RULES) is configured.
 
 # Telegram Alerts (for automated yt-dlp updater and disk/RAM resource alerts)
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
