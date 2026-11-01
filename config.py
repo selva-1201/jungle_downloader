@@ -86,6 +86,7 @@ class AppConfig:
     MAX_CONCURRENT_EXTRACT: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_EXTRACT", 6))
     MAX_CONCURRENT_YOUTUBE: int = field(default_factory=lambda: _get_int("MAX_CONCURRENT_YOUTUBE", 2))
     FFMPEG_TIMEOUT_SEC: int = field(default_factory=lambda: _get_int("FFMPEG_TIMEOUT_SEC", 900))
+    EXTRACT_TIMEOUT_SEC: int = field(default_factory=lambda: _get_int("EXTRACT_TIMEOUT_SEC", 60))
 
     RATE_LIMIT_EXTRACT: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_EXTRACT", "10/minute;100/day"))
     RATE_LIMIT_STREAM: str = field(default_factory=lambda: os.getenv("RATE_LIMIT_STREAM", "6/minute;40/day"))

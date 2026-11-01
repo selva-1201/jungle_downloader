@@ -255,36 +255,75 @@ def safe_requests_get(
 def validate_extracted_urls(info: Dict) -> Dict:
     """
     Validates all media URLs inside yt-dlp extracted info dictionary.
-    Drops any formats targeting non-public / internal IP addresses.
+    Memoizes DNS resolution per hostname within one call to prevent redundant lookups.
+    Validates unique hostnames of url/manifest_url/fragments, dropping any format
+    with any bad host.
     """
     formats = info.get("formats", [])
     valid_formats = []
+    host_cache: Dict[str, bool] = {}
+
+    def _is_url_host_safe(u: Optional[str]) -> bool:
+        if not u or not isinstance(u, str):
+            return True
+        host = None
+        try:
+            parsed = urllib.parse.urlsplit(u)
+            if parsed.scheme.lower() not in ("http", "https"):
+                return False
+            host = parsed.hostname
+            if not host:
+                return False
+            if host in host_cache:
+                return host_cache[host]
+
+            validate_public_url(u)
+            host_cache[host] = True
+            return True
+        except SSRFValidationError:
+            if host:
+                host_cache[host] = False
+            return False
+        except Exception:
+            if host:
+                host_cache[host] = False
+            return False
+
     for f in formats:
         fmt_url = f.get("url")
-        if fmt_url:
-            try:
-                validate_public_url(fmt_url)
-            except SSRFValidationError:
-                continue
+        if fmt_url and not _is_url_host_safe(fmt_url):
+            continue
 
         manifest_url = f.get("manifest_url")
-        if manifest_url:
-            try:
-                validate_public_url(manifest_url)
-            except SSRFValidationError:
-                continue
+        if manifest_url and not _is_url_host_safe(manifest_url):
+            continue
 
         fragments = f.get("fragments")
         if fragments and isinstance(fragments, list):
             bad_fragment = False
+            seen_frag_hosts = set()
             for frag in fragments:
-                frag_url = frag.get("url") if isinstance(frag, dict) else None
-                if frag_url:
-                    try:
-                        validate_public_url(frag_url)
-                    except SSRFValidationError:
+                if not isinstance(frag, dict):
+                    continue
+                frag_url = frag.get("url")
+                if not frag_url or not isinstance(frag_url, str):
+                    continue
+                try:
+                    frag_host = urllib.parse.urlsplit(frag_url).hostname
+                except Exception:
+                    bad_fragment = True
+                    break
+                if not frag_host:
+                    bad_fragment = True
+                    break
+                if frag_host not in seen_frag_hosts:
+                    seen_frag_hosts.add(frag_host)
+                    if not _is_url_host_safe(frag_url):
                         bad_fragment = True
                         break
+                elif host_cache.get(frag_host) is False:
+                    bad_fragment = True
+                    break
             if bad_fragment:
                 continue
 

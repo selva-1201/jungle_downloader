@@ -516,11 +516,15 @@ def handle_500(e):
 @app.route('/api/download', methods=['POST'])
 @limiter.limit(lambda: config.RATE_LIMIT_EXTRACT)
 def download_video():
-    data = request.get_json(silent=True) or {}
-    video_url = data.get('url', '').strip()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'success': False, 'error': 'Invalid request body. Expected a JSON object.'}), 400
 
-    if not video_url:
+    raw_url = data.get('url')
+    if not isinstance(raw_url, str) or not raw_url.strip():
         return jsonify({'success': False, 'error': 'Please provide a valid URL.'}), 400
+
+    video_url = raw_url.strip()
 
     client_ip = get_real_client_ip(request)
 
@@ -625,7 +629,19 @@ def download_video():
                 'error': 'Site temporarily blocking us, try again later.'
             }), 429
 
-        info = fetch_fresh_metadata(video_url, proxy_url=extraction_proxy)
+        try:
+            with gevent.Timeout(config.EXTRACT_TIMEOUT_SEC):
+                info = fetch_fresh_metadata(video_url, proxy_url=extraction_proxy)
+        except gevent.Timeout:
+            logger.warning("Extraction timed out after %ds for %s", config.EXTRACT_TIMEOUT_SEC, extractor_name)
+            proxy_router.record_result(extractor_name, success=False, error="Extraction timed out")
+            if is_youtube:
+                youtube_circuit_breaker.record_failure("Extraction timed out")
+            return jsonify({
+                'success': False,
+                'error': 'Could not process this link'
+            }), 400
+
         info = validate_extracted_urls(info)
         proxy_router.record_result(extractor_name, success=True)
         if is_youtube:
