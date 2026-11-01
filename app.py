@@ -826,6 +826,13 @@ def stream_download():
             "error": "Download session expired. Please search again."
         }), 410
 
+    # R11: Re-check blocklist on cached original_url
+    original_url = cached.get("original_url")
+    if original_url:
+        is_blocked, reason = blocklist_manager.is_url_blocked(original_url, check_supported_site=False)
+        if is_blocked:
+            return jsonify({"success": False, "error": reason}), 400
+
     extractor_name = info.get('extractor', '')
     if not config.ALLOW_ADULT and blocklist_manager.is_adult_extractor(extractor_name):
         return jsonify({"success": False, "error": "This site is not supported."}), 400
@@ -990,6 +997,13 @@ def preview_video():
             "code": "SESSION_EXPIRED",
             "error": "Preview session expired. Please search again."
         }), 410
+
+    # R11: Re-check blocklist on cached original_url
+    original_url = cached.get("original_url")
+    if original_url:
+        is_blocked, reason = blocklist_manager.is_url_blocked(original_url, check_supported_site=False)
+        if is_blocked:
+            return jsonify({"success": False, "error": reason}), 400
 
     extractor_name = info.get('extractor', '')
     if not config.ALLOW_ADULT and blocklist_manager.is_adult_extractor(extractor_name):
