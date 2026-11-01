@@ -305,17 +305,14 @@ def build_safe_ffmpeg_args(
 ) -> List[str]:
     """
     Constructs an explicit, injection-safe ffmpeg command argument list.
-    Enforces protocol whitelists, duration limits, and safe operand placement.
+    Enforces per-input protocol whitelists and rw_timeouts before EACH -i.
+    Places duration cap (-t) and muxing queue size on output (after last -i, before pipe:1).
     Applies -headers before EACH -i (video and audio) using each format's own headers.
     """
     ff_cmd = [
         "ffmpeg",
         "-hide_banner",
         "-loglevel", "error",
-        "-protocol_whitelist", "http,https,tcp,tls,crypto",
-        "-rw_timeout", str(int(config.FFMPEG_TIMEOUT_SEC * 1_000_000)),
-        "-t", str(max_duration),
-        "-max_muxing_queue_size", "1024"
     ]
 
     if proxy_url:
@@ -336,41 +333,57 @@ def build_safe_ffmpeg_args(
             clean.append(f"{k_clean}: {v_clean}\r\n")
         return "".join(clean)
 
+    def _build_input_options(h_dict: Optional[Dict[str, str]]) -> List[str]:
+        opts = [
+            "-protocol_whitelist", "http,https,tcp,tls,crypto",
+            "-rw_timeout", str(int(config.FFMPEG_TIMEOUT_SEC * 1_000_000)),
+        ]
+        h_str = _format_headers(h_dict)
+        if h_str:
+            opts.extend(["-headers", h_str])
+        return opts
+
     if is_audio_only:
         target_url = audio_url if audio_url else video_url
         h_dict = audio_headers_dict if (audio_url and audio_headers_dict) else headers_dict
-        headers_str = _format_headers(h_dict)
-        if headers_str:
-            ff_cmd.extend(["-headers", headers_str])
-        ff_cmd.extend(["-i", target_url, "-vn", "-f", "mp3", "-b:a", "192k", "pipe:1"])
+        ff_cmd.extend(_build_input_options(h_dict))
+        ff_cmd.extend([
+            "-i", target_url,
+            "-vn", "-f", "mp3", "-b:a", "192k",
+            "-t", str(max_duration),
+            "-max_muxing_queue_size", "1024",
+            "pipe:1"
+        ])
 
     elif audio_url:
-        headers_str = _format_headers(headers_dict)
-        if headers_str:
-            ff_cmd.extend(["-headers", headers_str])
+        # Input 1: video
+        ff_cmd.extend(_build_input_options(headers_dict))
         ff_cmd.extend(["-i", video_url])
 
-        audio_headers_str = _format_headers(audio_headers_dict or headers_dict)
-        if audio_headers_str:
-            ff_cmd.extend(["-headers", audio_headers_str])
+        # Input 2: audio
+        ff_cmd.extend(_build_input_options(audio_headers_dict or headers_dict))
         ff_cmd.extend(["-i", audio_url])
 
+        # Output options after both inputs
         ff_cmd.extend([
             "-map", "0:v:0", "-map", "1:a:0",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
             "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+            "-t", str(max_duration),
+            "-max_muxing_queue_size", "1024",
             "pipe:1"
         ])
 
     else:
-        headers_str = _format_headers(headers_dict)
-        if headers_str:
-            ff_cmd.extend(["-headers", headers_str])
+        # Single input
+        ff_cmd.extend(_build_input_options(headers_dict))
         ff_cmd.extend([
             "-i", video_url,
             "-map", "0:v?", "-map", "0:a?",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
             "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+            "-t", str(max_duration),
+            "-max_muxing_queue_size", "1024",
             "pipe:1"
         ])
 

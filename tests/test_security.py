@@ -110,18 +110,29 @@ def test_build_safe_ffmpeg_args_structure():
     a_url = "https://cdn.example.com/a.mp3"
     args = build_safe_ffmpeg_args(v_url, a_url, is_audio_only=False, max_duration=600)
 
-    # Check protocol whitelist
-    assert "-protocol_whitelist" in args
-    proto_idx = args.index("-protocol_whitelist")
-    assert "http,https,tcp,tls,crypto" == args[proto_idx + 1]
+    # Check protocol whitelist and rw_timeout before both inputs
+    first_i = args.index("-i")
+    second_i = args.index("-i", first_i + 2)
 
-    # Check duration cap
-    assert "-t" in args
+    before_first_i = args[:first_i]
+    assert "-protocol_whitelist" in before_first_i
+    assert "-rw_timeout" in before_first_i
+
+    between_inputs = args[first_i + 2:second_i]
+    assert "-protocol_whitelist" in between_inputs
+    assert "-rw_timeout" in between_inputs
+
+    # Check duration cap (-t) appears after the last -i and before pipe:1
+    after_last_i = args[second_i + 2:]
+    assert "-t" in after_last_i
     t_idx = args.index("-t")
+    pipe_idx = args.index("pipe:1")
+    assert t_idx > second_i
+    assert t_idx < pipe_idx
     assert args[t_idx + 1] == "600"
 
-    # Check max muxing queue size
-    assert "-max_muxing_queue_size" in args
+    # Check max muxing queue size appears as output option
+    assert "-max_muxing_queue_size" in after_last_i
 
 
 def test_build_safe_ffmpeg_args_handles_dash_url():
