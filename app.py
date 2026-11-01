@@ -38,6 +38,7 @@ from concurrency import (
     ffmpeg_semaphore,
     proxy_semaphore,
     ReleasingIterator,
+    StreamAborted,
 )
 from cache_store import cache_store
 from turnstile import (
@@ -205,21 +206,50 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only, proxy_url=None)
         else:
             proc = gevent_subprocess.Popen(ff_cmd, stdout=gevent_subprocess.PIPE, stderr=gevent_subprocess.DEVNULL)
 
+        watchdog_killed = False
+
         def watchdog(p, timeout_sec):
+            nonlocal watchdog_killed
             gevent.sleep(timeout_sec)
             if p.poll() is None:
+                watchdog_killed = True
                 try:
                     p.kill()
                 except Exception:
                     pass
 
         watchdog_greenlet = gevent.spawn(watchdog, proc, config.FFMPEG_TIMEOUT_SEC)
+        start_time = time.time()
+        timeout_sec = config.FFMPEG_TIMEOUT_SEC
+        max_bytes = config.MAX_FILESIZE_MB * 1024 * 1024
+        total_bytes = 0
 
         try:
             while True:
                 chunk = proc.stdout.read(CHUNK_SIZE)
                 if not chunk:
+                    if watchdog_killed:
+                        logger.warning("FFmpeg stream aborted: watchdog timeout (%ds) triggered", timeout_sec)
+                        raise StreamAborted(f"FFmpeg stream killed by watchdog after {timeout_sec}s timeout")
                     break
+
+                if time.time() - start_time > timeout_sec:
+                    logger.warning("FFmpeg stream aborted: wall-clock timeout (%ds) exceeded", timeout_sec)
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                    raise StreamAborted(f"FFmpeg stream exceeded timeout of {timeout_sec}s")
+
+                total_bytes += len(chunk)
+                if total_bytes > max_bytes:
+                    logger.warning("FFmpeg stream aborted: byte limit (%d MB) exceeded", config.MAX_FILESIZE_MB)
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                    raise StreamAborted(f"FFmpeg stream exceeded maximum size of {config.MAX_FILESIZE_MB} MB")
+
                 if proxy_url:
                     proxy_router.record_proxied_bytes(len(chunk))
                 yield chunk
@@ -304,11 +334,15 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
         try:
             for chunk in r.iter_content(chunk_size=1024 * 1024):
                 if time.time() - start_time > timeout_sec:
-                    break
+                    logger.warning("Direct stream aborted: wall-clock timeout (%ds) exceeded", timeout_sec)
+                    r.close()
+                    raise StreamAborted(f"Stream exceeded wall-clock timeout of {timeout_sec} seconds")
                 if chunk:
                     total_bytes += len(chunk)
                     if total_bytes > max_bytes:
-                        break
+                        logger.warning("Direct stream aborted: byte limit (%d MB) exceeded", config.MAX_FILESIZE_MB)
+                        r.close()
+                        raise StreamAborted(f"Stream exceeded maximum allowed size of {config.MAX_FILESIZE_MB} MB")
                     if proxy_url:
                         proxy_router.record_proxied_bytes(len(chunk))
                     yield chunk
@@ -455,6 +489,12 @@ def metrics():
     snapshot = proxy_router.get_metrics_snapshot()
     snapshot["extractors"] = dict(extractor_counters)
     return jsonify(snapshot)
+
+
+@app.errorhandler(StreamAborted)
+def handle_stream_aborted(e):
+    logger.warning("Stream aborted: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+    return ('', 499)
 
 
 @app.errorhandler(404)

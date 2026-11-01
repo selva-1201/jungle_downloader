@@ -280,10 +280,10 @@ def test_generator_aborts_at_byte_cap(mocker):
         close=mocker.MagicMock()
     )
     mocker.patch("app.safe_requests_get", return_value=mock_resp_stream)
+    from concurrency import StreamAborted
     gen, ctype, clen = stream_via_direct_url({"url": "https://example.com/stream.mp4"}, "video")
-    yielded_chunks = list(gen)
-    total_yielded_bytes = sum(len(c) for c in yielded_chunks)
-    assert total_yielded_bytes <= max_b
+    with pytest.raises(StreamAborted):
+        list(gen)
 
 
 def test_watchdog_kills_hanging_fake_process(mocker):

@@ -13,6 +13,11 @@ ffmpeg_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_FFMPEG)
 proxy_semaphore = BoundedSemaphore(config.MAX_CONCURRENT_PROXY)
 
 
+class StreamAborted(Exception):
+    """Raised when an in-flight media stream is terminated due to size caps or timeouts."""
+    pass
+
+
 class ReleasingIterator:
     """
     Wraps an iterator/generator and ensures a release callback is invoked exactly once
