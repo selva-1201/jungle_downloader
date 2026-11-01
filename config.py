@@ -121,6 +121,22 @@ class AppConfig:
     LEGAL_LAST_UPDATED: str = field(default_factory=lambda: os.getenv("LEGAL_LAST_UPDATED", "October 2026"))
     PUBLIC_REPO_URL: str = field(default_factory=lambda: os.getenv("PUBLIC_REPO_URL", ""))
 
+    def __post_init__(self):
+        self.validate()
+
+    def validate(self):
+        if self.YTDLP_PROXY and self.YTDLP_PROXY.strip().lower().startswith("socks"):
+            raise ValueError(
+                f"SOCKS proxies are not supported in YTDLP_PROXY ('{self.YTDLP_PROXY}'). "
+                "Use http:// or https:// proxies instead because ffmpeg does not support SOCKS."
+            )
+        for k, v in self.PROXY_RULES.items():
+            if isinstance(v, str) and v.strip().lower().startswith("socks"):
+                raise ValueError(
+                    f"SOCKS proxies are not supported in PROXY_RULES['{k}'] ('{v}'). "
+                    "Use http:// or https:// proxies instead because ffmpeg does not support SOCKS."
+                )
+
 
 config = AppConfig()
 

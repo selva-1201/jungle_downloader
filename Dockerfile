@@ -58,9 +58,9 @@ WORKDIR /app
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONUNBUFFERED=1
 
-COPY requirements.txt requirements-dev.txt ./
+COPY requirements.lock requirements-dev.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+    pip install --no-cache-dir -r requirements.lock -r requirements-dev.txt
 
 COPY . .
 COPY --from=tailwind-builder /build/static/css/app.css /app/static/css/app.css
@@ -95,10 +95,10 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     XDG_CACHE_HOME=/tmp/.cache \
     XDG_CONFIG_HOME=/tmp/.config
 
-# Install pinned Python dependencies
-COPY requirements.txt .
+# Install pinned Python dependencies from lockfile
+COPY requirements.lock .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.lock
 
 # Copy application source code
 COPY . .

@@ -59,9 +59,13 @@ Operational procedures, incident response workflows, and maintenance runbooks fo
 2. **Route Blocked Extractor Through Residential/Datacenter Proxy**:
    Instead of proxying all traffic (expensive), route only the blocked platform via `PROXY_RULES` in `.env`:
    ```dotenv
-   PROXY_RULES={"youtube": "http://user:pass@proxy.example.com:8080", "instagram": "socks5://user:pass@proxy2.example.com:1080"}
+   PROXY_RULES={"youtube": "http://user:pass@proxy.example.com:8080", "instagram": "http://user:pass@proxy2.example.com:8080"}
    PROXIED_DAILY_BYTE_BUDGET_GB=50
    ```
+
+   > [!IMPORTANT]
+   > **Proxy Protocol Requirement**:
+   > Only HTTP/HTTPS proxies (`http://...`, `https://...`) are supported. SOCKS proxies (`socks4://`, `socks5://`) are intentionally rejected at startup because ffmpeg does not support SOCKS, which would cause media multiplexing to bypass the proxy and expose host IPs.
 3. **Restart the Application**:
    ```bash
    docker compose up -d app
