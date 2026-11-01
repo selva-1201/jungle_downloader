@@ -84,11 +84,20 @@ if ! docker build --target test -t "${TEST_TAG}" -f Dockerfile . ; then
 fi
 
 echo "[INFO] Running pytest test suite inside candidate test container..."
-if ! docker run --rm "${TEST_TAG}" ; then
-    echo "[ERROR] Candidate container failed pytest! Rolling back."
+set +e
+docker run --rm "${TEST_TAG}"
+PYTEST_EXIT=$?
+set -e
+
+if [[ ${PYTEST_EXIT} -ne 0 ]]; then
+    if [[ ${PYTEST_EXIT} -eq 5 ]]; then
+        echo "[ERROR] Candidate container collected NO tests (pytest exit code 5)! Rolling back."
+    else
+        echo "[ERROR] Candidate container failed pytest (exit code ${PYTEST_EXIT})! Rolling back."
+    fi
     mv "${BACKUP_FILE}" "${REQUIREMENTS_FILE}"
     docker rmi "${TEST_TAG}" 2>/dev/null || true
-    send_alert "Jungle Downloader: Candidate container with yt-dlp ${LATEST_VERSION} failed pytest. Rolled back."
+    send_alert "Jungle Downloader: Candidate container with yt-dlp ${LATEST_VERSION} failed pytest (exit ${PYTEST_EXIT}). Rolled back."
     exit 1
 fi
 docker rmi "${TEST_TAG}" 2>/dev/null || true

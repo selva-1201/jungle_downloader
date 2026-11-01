@@ -21,16 +21,12 @@ __pycache__/
 *.pyd
 
 # Testing & Artifacts
-tests/
 .pytest_cache/
 .coverage
 htmlcov/
 
 # Documentation & Plan
-docs/
 PLAN.md
-DEPLOY.md
-RUNBOOK.md
 
 # Local build binaries
 bin/

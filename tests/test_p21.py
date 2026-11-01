@@ -38,6 +38,14 @@ def test_ads_enabled_renders_ad_slots(client, monkeypatch):
 
 
 def test_ruff_check_clean():
-    result = subprocess.run([".venv/bin/ruff", "check", "."], capture_output=True, text=True)
+    import shutil
+    import sys
+
+    # Skip if ruff cannot be run as a module
+    check = subprocess.run([sys.executable, "-m", "ruff", "--version"], capture_output=True, text=True)
+    if check.returncode != 0:
+        pytest.skip("ruff module is not installed in the current Python environment")
+
+    result = subprocess.run([sys.executable, "-m", "ruff", "check", "."], capture_output=True, text=True)
     assert result.returncode == 0, f"Ruff lint errors found:\n{result.stdout}\n{result.stderr}"
 

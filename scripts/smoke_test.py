@@ -6,7 +6,9 @@ import time
 from typing import Any, Dict, List
 import yt_dlp
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "smoke_urls.json")
+# Note: smoke_urls.json was previously located at tests/smoke_urls.json (now in data/ so it persists in Docker image)
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "smoke_urls.json")
+OLD_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "smoke_urls.json")
 
 
 def run_smoke_test(config_path: str = DEFAULT_CONFIG_PATH) -> bool:
@@ -15,8 +17,11 @@ def run_smoke_test(config_path: str = DEFAULT_CONFIG_PATH) -> bool:
     Reports pass/fail per site and recognizes expected_fail_on_datacenter entries.
     """
     if not os.path.exists(config_path):
-        print(f"Error: smoke test config file '{config_path}' not found.")
-        return False
+        if config_path == DEFAULT_CONFIG_PATH and os.path.exists(OLD_CONFIG_PATH):
+            config_path = OLD_CONFIG_PATH
+        else:
+            print(f"Error: smoke test config file '{config_path}' not found.")
+            return False
 
     with open(config_path, "r", encoding="utf-8") as f:
         targets: List[Dict[str, Any]] = json.load(f)
