@@ -74,12 +74,13 @@
     }
 
     # Restrict /metrics endpoint from public access
-    # Internal health and metrics access via container loopback only:
-    #   docker compose exec app curl -s localhost:5000/metrics
+    # Internal health and metrics access via container loopback only
     @blocked_metrics path /metrics /metrics/*
-    respond @blocked_metrics 403 {
-        body "403 Forbidden"
-        close
+    handle @blocked_metrics {
+        respond 403 {
+            body "403 Forbidden"
+            close
+        }
     }
 
     # Static file caching with validation
