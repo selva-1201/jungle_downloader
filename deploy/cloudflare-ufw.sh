@@ -107,12 +107,12 @@ generate_cf_rules() {
     while IFS= read -r ip; do
         ip=$(echo "${ip}" | tr -d '\r ')
         if [[ -n "${ip}" ]]; then
-            echo "iptables -A DOCKER-USER -i ${ext_if} -s ${ip} -p tcp -m conntrack --ctorigdstport 80 -j ACCEPT"
-            echo "iptables -A DOCKER-USER -i ${ext_if} -s ${ip} -p tcp -m conntrack --ctorigdstport 443 -j ACCEPT"
+            echo "iptables -I DOCKER-USER ${pos} -i ${ext_if} -s ${ip} -p tcp -m conntrack --ctorigdstport 80 -j ACCEPT"; ((pos++))
+            echo "iptables -I DOCKER-USER ${pos} -i ${ext_if} -s ${ip} -p tcp -m conntrack --ctorigdstport 443 -j ACCEPT"; ((pos++))
         fi
     done <<< "${IPV4_LIST}"
-    echo "iptables -A DOCKER-USER -i ${ext_if} -p tcp -m conntrack --ctorigdstport 80 -j DROP"
-    echo "iptables -A DOCKER-USER -i ${ext_if} -p tcp -m conntrack --ctorigdstport 443 -j DROP"
+    echo "iptables -I DOCKER-USER ${pos} -i ${ext_if} -p tcp -m conntrack --ctorigdstport 80 -j DROP"; ((pos++))
+    echo "iptables -I DOCKER-USER ${pos} -i ${ext_if} -p tcp -m conntrack --ctorigdstport 443 -j DROP"; ((pos++))
 }
 
 if [[ "${DRY_RUN}" = true ]]; then

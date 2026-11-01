@@ -1145,11 +1145,15 @@ def preview_video():
                 try:
                     for chunk in r.iter_content(chunk_size=512 * 1024):
                         if time.time() - start_time > timeout_sec:
-                            break
+                            logger.warning("Preview stream aborted: wall-clock timeout (%ds) exceeded", timeout_sec)
+                            r.close()
+                            raise StreamAborted(f"Preview stream exceeded timeout of {timeout_sec}s")
                         if chunk:
                             total_bytes += len(chunk)
                             if total_bytes > max_bytes:
-                                break
+                                logger.warning("Preview stream aborted: byte limit (%d MB) exceeded", config.MAX_FILESIZE_MB)
+                                r.close()
+                                raise StreamAborted(f"Preview stream exceeded byte limit of {config.MAX_FILESIZE_MB} MB")
                             if proxy_url:
                                 proxy_router.record_proxied_bytes(len(chunk))
                             yield chunk
