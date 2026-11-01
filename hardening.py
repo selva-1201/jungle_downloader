@@ -37,12 +37,35 @@ def is_cloudflare_ip(ip_str: str) -> bool:
         return False
 
 
+def normalize_client_ip(ip_str: str) -> str:
+    """
+    Normalizes an IP address string:
+    - IPv4 addresses are returned unchanged.
+    - IPv4-mapped IPv6 addresses (e.g. ::ffff:192.0.2.1) are normalized to standard IPv4.
+    - Native IPv6 addresses are normalized to their /64 network string (e.g. 2001:db8:1:2::/64)
+      to prevent abuse from IPv6 address rotation within the same allocated subnet.
+    """
+    if not ip_str:
+        return "127.0.0.1"
+    try:
+        ip = ipaddress.ip_address(ip_str.strip())
+        if ip.version == 4:
+            return str(ip)
+        if ip.ipv4_mapped:
+            return str(ip.ipv4_mapped)
+        network = ipaddress.ip_network(f"{ip}/64", strict=False)
+        return str(network)
+    except ValueError:
+        return ip_str.strip()
+
+
 def get_real_client_ip(req: Request) -> str:
     """
     Extracts the authenticated client IP address.
     Trusts X-Real-IP (and falls back to the socket address) ONLY when the
     immediate peer address is in TRUSTED_PROXY_CIDRS.
     Ignores CF-Connecting-IP and X-Forwarded-For entirely.
+    Normalizes IPv6 clients to their /64 network string and IPv4-mapped IPv6 to IPv4.
     """
     peer = (req.remote_addr or "").strip()
     if not peer:
@@ -63,18 +86,18 @@ def get_real_client_ip(req: Request) -> str:
         except ValueError:
             continue
 
+    raw_ip = peer
     if is_trusted:
         x_real_ip = req.headers.get("X-Real-IP")
         if x_real_ip:
             x_real_ip = x_real_ip.strip()
             try:
-                valid_ip = ipaddress.ip_address(x_real_ip)
-                return str(valid_ip)
+                ipaddress.ip_address(x_real_ip)
+                raw_ip = x_real_ip
             except ValueError:
-                # Invalid X-Real-IP value falls back to the peer
-                return peer
+                raw_ip = peer
 
-    return peer
+    return normalize_client_ip(raw_ip)
 
 
 

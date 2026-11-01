@@ -16,6 +16,10 @@ Powered by **Flask**, **gevent**, **yt-dlp**, **ffmpeg**, and **Caddy**.
   - Transparent progressive streaming for standard media.
   - Universal real-time ffmpeg transcoding for audio conversion and fragmented streams (HLS/DASH).
 - **Origin & Edge Hardening**: Cloudflare Turnstile bot verification, Cloudflare-only UFW origin firewalling, and strict security headers (`X-Content-Type-Options: nosniff`, CSP).
+- **Subnet-Aware Rate Limiting & CGNAT Trade-offs**:
+  - IPv6 client addresses are normalized to their `/64` subnet string (`2001:db8:1:2::/64`), preventing abuse by users rotating ephemeral SLAAC/privacy addresses.
+  - IPv4-mapped IPv6 addresses (`::ffff:192.0.2.1`) are normalized to standard IPv4.
+  - CGNAT trade-off: Carrier-Grade NAT (CGNAT) pools share a single public IPv4 address across many mobile or residential users, causing them to share rate limit buckets. All rate limits are env-tunable (`RATE_LIMIT_EXTRACT`, `RATE_LIMIT_STREAM`, `RATE_LIMIT_PREVIEW`) to balance bot protection with shared IP access.
 
 ---
 
