@@ -33,7 +33,7 @@ def test_required_cidrs_present_in_script():
 
     # Verify allowances
     assert "RELATED,ESTABLISHED" in content
-    assert "127.0.0.11" in content
+    assert "br-+" in content
 
 
 def test_verify_and_dry_run_flags():

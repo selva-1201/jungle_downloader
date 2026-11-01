@@ -212,16 +212,21 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 9. Docker Daemon Log Rotation Defaults
+# 9. Docker Daemon Log Rotation & Public DNS Defaults
 # ------------------------------------------------------------------------------
-log_info "Configuring Docker daemon default log limits (/etc/docker/daemon.json)..."
+# On Oracle Cloud (OCI), the default VCN resolver is 169.254.169.254.
+# Because block_internal_egress.sh drops container egress to 169.254.0.0/16,
+# containers cannot resolve DNS via the OCI resolver. We explicitly configure
+# public resolvers (1.1.1.1, 8.8.8.8) in /etc/docker/daemon.json so containers
+# retain working DNS resolution.
+log_info "Configuring Docker daemon default log limits and public DNS (/etc/docker/daemon.json)..."
 mkdir -p /etc/docker
 DAEMON_JSON="/etc/docker/daemon.json"
 
 if [[ -f "${DAEMON_JSON}" ]]; then
-    # Merge existing config with log-opts
+    # Merge existing config with log-opts and public DNS
     TMP_JSON=$(mktemp)
-    jq '. + {"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' "${DAEMON_JSON}" > "${TMP_JSON}" 2>/dev/null || true
+    jq '. + {"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}, "dns": ["1.1.1.1", "8.8.8.8"]}' "${DAEMON_JSON}" > "${TMP_JSON}" 2>/dev/null || true
     if [[ -s "${TMP_JSON}" ]]; then
         mv "${TMP_JSON}" "${DAEMON_JSON}"
     else
@@ -234,7 +239,11 @@ else
   "log-opts": {
     "max-size": "10m",
     "max-file": "3"
-  }
+  },
+  "dns": [
+    "1.1.1.1",
+    "8.8.8.8"
+  ]
 }
 EOF
 fi
