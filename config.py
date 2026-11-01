@@ -120,11 +120,27 @@ class AppConfig:
     BLOCKED_URLS_FILE: str = field(default_factory=lambda: os.getenv("BLOCKED_URLS_FILE", "data/blocked_urls.txt"))
     LEGAL_LAST_UPDATED: str = field(default_factory=lambda: os.getenv("LEGAL_LAST_UPDATED", "October 2026"))
     PUBLIC_REPO_URL: str = field(default_factory=lambda: os.getenv("PUBLIC_REPO_URL", ""))
+    SITE_ADDRESS: str = field(default_factory=lambda: os.getenv("SITE_ADDRESS", "0.0.0.0:5000"))
+    APP_MEM_LIMIT: str = field(default_factory=lambda: os.getenv("APP_MEM_LIMIT", "2048M"))
+    APP_CPUS: str = field(default_factory=lambda: os.getenv("APP_CPUS", "2.0"))
 
     def __post_init__(self):
         self.validate()
 
     def validate(self):
+        if self.IS_PROD:
+            if self.CONTACT_EMAIL.endswith(".local") or self.DMCA_EMAIL.endswith(".local"):
+                raise ValueError(
+                    f"Production environment (ENV={self.ENV}) cannot start with placeholder emails "
+                    f"(CONTACT_EMAIL='{self.CONTACT_EMAIL}', DMCA_EMAIL='{self.DMCA_EMAIL}'). "
+                    "Configure valid operator and DMCA contact email addresses."
+                )
+            if "localhost" in self.SITE_URL.lower() or "127.0.0.1" in self.SITE_URL:
+                raise ValueError(
+                    f"Production environment (ENV={self.ENV}) cannot start with localhost SITE_URL "
+                    f"('{self.SITE_URL}'). Configure the public production domain URL."
+                )
+
         if self.YTDLP_PROXY and self.YTDLP_PROXY.strip().lower().startswith("socks"):
             raise ValueError(
                 f"SOCKS proxies are not supported in YTDLP_PROXY ('{self.YTDLP_PROXY}'). "

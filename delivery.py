@@ -9,7 +9,7 @@ from config import config
 logger = logging.getLogger(__name__)
 
 BOT_PATTERN = re.compile(
-    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm you['’]?re not a bot|too many requests|blocking us|automated queries",
     re.IGNORECASE,
 )
 

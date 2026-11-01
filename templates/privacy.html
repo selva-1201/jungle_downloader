@@ -14,10 +14,8 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="{{ site_url }}/privacy">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/space-grotesk.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <style>
     body {
       background-color: #050505;
@@ -89,7 +87,12 @@
     </section>
 
     <section>
-      <h2 class="text-base font-semibold text-white mb-2">7. Contact & Inquiries</h2>
+      <h2 class="text-base font-semibold text-white mb-2">7. Self-Hosted Typography & Zero Font Tracking</h2>
+      <p>All typography and fonts (Space Grotesk) are self-hosted directly from our server. No client telemetry, IP addresses, or referrer headers are shared with Google Fonts or third-party font networks.</p>
+    </section>
+
+    <section>
+      <h2 class="text-base font-semibold text-white mb-2">8. Contact & Inquiries</h2>
       <p>If you have any questions or concerns regarding this Privacy Policy or our data protection practices, please contact us at <a href="mailto:{{ contact_email }}" class="text-white underline">{{ contact_email }}</a>.</p>
     </section>
 

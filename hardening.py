@@ -156,8 +156,14 @@ def build_content_disposition(filename: str, ext: str = ".mp4") -> str:
     return f"attachment; filename=\"{ascii_clean}\"; filename*=UTF-8''{utf8_encoded}"
 
 
+LOGIN_PRIVATE_AGE_PATTERN = re.compile(
+    r"\b(private video|sign in if you've been granted|login required|requires login|age-restricted|confirm your age|members-only|subscriber-only)\b|"
+    r"this video is private|sign in to view|requires authentication",
+    re.IGNORECASE,
+)
+
 BOT_PATTERN = re.compile(
-    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm|too many requests|blocking us|automated queries",
+    r"\b(bot|captcha|429)\b|not a bot|sign in to confirm you['’]?re not a bot|too many requests|blocking us|automated queries",
     re.IGNORECASE,
 )
 
@@ -173,7 +179,14 @@ def map_error_message(exc: Exception) -> str:
     if "too long" in err_lower or "duration" in err_lower:
         return f"Video too long (maximum allowed is {config.MAX_DURATION_SEC // 60} minutes)."
 
-    if BOT_PATTERN.search(err_str) or "sign in" in err_lower:
+    if LOGIN_PRIVATE_AGE_PATTERN.search(err_str):
+        if "private" in err_lower:
+            return "This media is private and cannot be downloaded."
+        if "age" in err_lower or "confirm your age" in err_lower:
+            return "This media is age-restricted and requires account verification."
+        return "This media requires login or account authorization."
+
+    if BOT_PATTERN.search(err_str):
         return "Site temporarily blocking us, try again later."
 
     if "403" in err_lower or "forbidden" in err_lower:

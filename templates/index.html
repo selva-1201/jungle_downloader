@@ -10,7 +10,7 @@
   <meta name="description"
     content="Jungle Media Downloader is a free media downloader. Download videos and audio from YouTube, Instagram, Facebook, TikTok, Twitter/X, Reddit, Vimeo, Twitch, SoundCloud, Dailymotion, Pinterest, LinkedIn, Bilibili, and {{ display_count }} more. No login required. MP4 & MP3 supported.">
   <meta name="keywords" content="
-    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, open source video downloader, browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, multi site video downloader
+    media downloader, free video downloader, online video downloader, no login video downloader, youtube video downloader, youtube audio downloader, youtube mp3 downloader, youtube mp4 downloader, download youtube videos free, instagram video downloader, instagram reels downloader, instagram stories downloader, download instagram videos, facebook video downloader, facebook reels downloader, facebook mp4 download, tiktok video downloader, tiktok mp4 download, tiktok audio downloader, download tiktok without watermark, twitter video downloader, x video downloader, twitter mp4 download, download twitter videos, reddit video downloader, reddit mp4 download, download reddit videos, vimeo video downloader, download vimeo videos, twitch clip downloader, twitch vod downloader, download twitch clips, soundcloud mp3 downloader, download soundcloud songs, dailymotion video downloader, download dailymotion videos, pinterest video downloader, download pinterest videos, linkedin video downloader, download linkedin videos, bilibili video downloader, bilibili mp4 download, niconico video downloader, tumblr video downloader, snapchat video downloader, telegram video downloader, youtube shorts downloader, {% if public_repo_url %}open source video downloader, {% endif %}browser video downloader, online mp3 converter, video to mp3 converter, download video as mp3, extract audio from video, multi site video downloader
   ">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Jungle Media Downloader">
@@ -56,7 +56,7 @@
       "Download videos from {{ display_count }}",
       "Convert video to MP3 audio",
       "No login or account required",
-      "Open source",
+      {% if public_repo_url %}"Open source",{% endif %}
       "Support for YouTube, Instagram, TikTok, Twitter/X, Facebook, Reddit, and more",
       "Multiple quality options: 1080p, 720p, 480p, 360p",
       "Preview before downloading"
@@ -68,10 +68,8 @@
   {% if turnstile_site_key %}
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
   {% endif %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
-    media="print" onload="this.media='all'">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/space-grotesk.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
 
   <style>
     body {
@@ -240,7 +238,7 @@
       </div>
 
       <div class="flex flex-row items-center justify-between mt-2 md:mt-1 w-full">
-        <p class="text-gray-400 text-[11px] sm:text-xs tracking-wide">Free multi-platform downloader · Open source</p>
+        <p class="text-gray-400 text-[11px] sm:text-xs tracking-wide">Free multi-platform downloader{% if public_repo_url %} · Open source{% endif %}</p>
 
         <button onclick="toggleTrickModal(true)"
           class="flex md:hidden flex-row items-center gap-1.5 px-3 py-1.5 text-white font-bold text-[11px] uppercase tracking-wide cursor-pointer bg-zinc-900/90 border border-[#25D366]/30 rounded-lg shadow-[0_0_12px_rgba(37,211,102,0.25)] hover:shadow-[0_0_18px_rgba(37,211,102,0.45)] transition-all active:scale-95 shrink-0">
@@ -269,7 +267,8 @@
 
     <div class="glass-panel p-2 rounded-2xl shadow-2xl mb-6 flex flex-col md:flex-row gap-2">
       <div class="relative flex-1 flex items-center">
-        <input type="text" id="videoUrl" placeholder="Paste a YouTube, Instagram, TikTok, Twitter/X, Facebook URL..."
+        <label for="videoUrl" class="sr-only">Media URL</label>
+        <input type="text" id="videoUrl" aria-label="Media URL" placeholder="Paste a YouTube, Instagram, TikTok, Twitter/X, Facebook URL..."
           class="glass-input w-full p-4 pr-12 rounded-xl text-white outline-none placeholder-gray-400"
           oninput="toggleClearButton()" onkeydown="if(event.key==='Enter') fetchMedia()">
 
@@ -470,7 +469,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </summary>
-          <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader is safe, clean, and secure.
+          <p class="text-xs text-gray-300 mt-3 leading-relaxed">Jungle Media Downloader operates transparently without executable installers or malware.
             {% if ads_enabled %}
             We display clean, non-intrusive display banners to cover infrastructure costs, but we never deploy deceptive pop-ups, redirect loops, or forced downloads.
             {% else %}
