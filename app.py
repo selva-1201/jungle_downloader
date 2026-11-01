@@ -667,6 +667,11 @@ def download_video():
                 'error': f"Video too long (maximum allowed is {config.MAX_DURATION_SEC // 60} minutes)."
             }), 400
 
+        # Store in TTL Cache under single-extraction token (which trims oversized formats to best 35)
+        token = cache_store.store_metadata(info, video_url, proxy=extraction_proxy)
+        cached_entry = cache_store.get_metadata(token)
+        formats = cached_entry["info"].get("formats", []) if cached_entry and "info" in cached_entry else formats
+
         has_any_audio = any(f.get('acodec', 'none') != 'none' for f in formats)
 
         audio_options, video_options = [], []
@@ -749,9 +754,6 @@ def download_video():
             preview_format_id = prog_combined[0]['format_id']
         elif unique_video:
             preview_format_id = unique_video[0]['format_id']
-
-        # Store in TTL Cache under single-extraction token
-        token = cache_store.store_metadata(info, video_url, proxy=extraction_proxy)
 
         resp = jsonify({
             'success': True,

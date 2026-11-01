@@ -40,17 +40,19 @@ def reset_limiter_and_semaphores():
     app_module.youtube_extract_semaphore = delivery.youtube_extract_semaphore
     app.youtube_extract_semaphore = delivery.youtube_extract_semaphore
 
-    delivery.youtube_circuit_breaker.failures = 0
-    delivery.youtube_circuit_breaker.last_failure_time = 0
+    delivery.youtube_circuit_breaker.reset()
+    delivery.proxy_router.proxied_bytes_today = 0
+    delivery.proxy_router.extractor_stats.clear()
     delivery.proxy_router.site_backoffs.clear()
-    delivery.proxy_router.daily_bytes_used = 0
     with cache_store._lock:
         cache_store._memory_cache.clear()
 
     yield
 
+    delivery.youtube_circuit_breaker.reset()
+    delivery.proxy_router.proxied_bytes_today = 0
+    delivery.proxy_router.extractor_stats.clear()
     delivery.proxy_router.site_backoffs.clear()
-    delivery.proxy_router.daily_bytes_used = 0
     with cache_store._lock:
         cache_store._memory_cache.clear()
 

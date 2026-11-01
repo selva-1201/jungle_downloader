@@ -116,13 +116,13 @@ class CacheStore:
         # 1. In-memory representation (trimmed, keeps headers needed for current instance)
         mem_info = trim_info(info, strip_secrets=False)
 
-        # Byte size guard: if formats list is enormous (>512KB), keep top 35 formats
+        # Byte size guard: if formats list is enormous (>512KB), keep best 35 formats (tail of yt-dlp worst-to-best list)
         try:
             raw_json = json.dumps(mem_info, default=str)
             if len(raw_json.encode("utf-8")) > MAX_PAYLOAD_BYTES:
                 formats = mem_info.get("formats", [])
                 if len(formats) > 35:
-                    mem_info["formats"] = formats[:35]
+                    mem_info["formats"] = formats[-35:]
         except Exception:
             pass
 
@@ -139,7 +139,7 @@ class CacheStore:
             try:
                 redis_info = trim_info(info, strip_secrets=True)
                 if len(redis_info.get("formats", [])) > 35:
-                    redis_info["formats"] = redis_info["formats"][:35]
+                    redis_info["formats"] = redis_info["formats"][-35:]
 
                 payload_redis = {
                     "token": token,
