@@ -29,6 +29,10 @@ function buildStreamUrl(token, formatId, filename, mediaType) {
   return `/api/stream?token=${encodeURIComponent(token)}&format_id=${encodeURIComponent(formatId)}&filename=${encodeURIComponent(filename)}&type=${encodeURIComponent(mediaType || 'video')}`;
 }
 
+function buildProbeUrl(token, formatId, filename, mediaType) {
+  return `${buildStreamUrl(token, formatId, filename, mediaType)}&probe=1`;
+}
+
 function triggerDownloadFrame(streamUrl) {
   let frame = document.getElementById('downloadFrame');
   if (!frame) {
@@ -47,6 +51,7 @@ if (typeof module !== 'undefined' && module.exports) {
     hasDownloadCookie,
     clearDownloadCookie,
     buildStreamUrl,
+    buildProbeUrl,
     triggerDownloadFrame
   };
 }

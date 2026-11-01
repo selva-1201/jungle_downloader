@@ -668,6 +668,28 @@
       }
     });
 
+    let previewTokenRefreshAttempted = false;
+    async function handleMediaPreviewError(mediaEl) {
+      if (previewTokenRefreshAttempted || !mediaEl.src) return;
+      try {
+        const checkResp = await fetch(mediaEl.src, { method: 'HEAD' }).catch(() => null);
+        if (checkResp && checkResp.status === 410) {
+          previewTokenRefreshAttempted = true;
+          const freshTok = await ensureFreshToken();
+          if (freshTok) {
+            const urlObj = new URL(mediaEl.src, window.location.origin);
+            urlObj.searchParams.set('token', freshTok);
+            mediaEl.src = urlObj.toString();
+            mediaEl.load();
+          }
+        }
+      } catch (err) {
+        // Ignore refresh error
+      }
+    }
+    videoElement.addEventListener('error', () => handleMediaPreviewError(videoElement));
+    audioElement.addEventListener('error', () => handleMediaPreviewError(audioElement));
+
     function toggleClearButton() {
       const urlInput = document.getElementById('videoUrl').value;
       const clearBtn = document.getElementById('btnClearUrl');
@@ -712,6 +734,7 @@
       videoElement.src = '';
       audioElement.pause();
       audioElement.src = '';
+      previewTokenRefreshAttempted = false;
 
       const loaderState = document.getElementById('loaderState');
       loaderState.classList.remove('hidden');
@@ -950,9 +973,8 @@
         if (elapsed >= 3000 && !probeAttempted) {
           probeAttempted = true;
           try {
-            const probeResp = await fetch(streamUrl, {
-              headers: { 'Range': 'bytes=0-0' }
-            });
+            const probeUrl = `${streamUrl}&probe=1`;
+            const probeResp = await fetch(probeUrl);
 
             if (!probeResp.ok) {
               clearInterval(pollTimer);

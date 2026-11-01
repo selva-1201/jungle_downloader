@@ -243,6 +243,31 @@ def stream_universal_ffmpeg(video_fmt, audio_fmt, is_audio_only, proxy_url=None)
     return gen(), content_type
 
 
+def resolve_content_type(target_format: dict, media_type: str = 'video') -> str:
+    """Resolve Content-Type based on format ext / media type to prevent MIME sniffing."""
+    fmt_ext = (target_format.get('ext') or '').lower()
+    if media_type == 'audio':
+        if fmt_ext == 'm4a':
+            return 'audio/mp4'
+        elif fmt_ext == 'webm':
+            return 'audio/webm'
+        elif fmt_ext == 'ogg':
+            return 'audio/ogg'
+        elif fmt_ext == 'wav':
+            return 'audio/wav'
+        else:
+            return 'audio/mpeg'
+    else:
+        if fmt_ext == 'webm':
+            return 'video/webm'
+        elif fmt_ext == 'mkv':
+            return 'video/x-matroska'
+        elif fmt_ext in ('mov', 'quicktime'):
+            return 'video/quicktime'
+        else:
+            return 'video/mp4'
+
+
 def stream_via_direct_url(target_format, media_type, proxy_url=None):
     stream_url = target_format.get('url', '')
     magic_headers = dict(target_format.get('http_headers', {}))
@@ -270,27 +295,7 @@ def stream_via_direct_url(target_format, media_type, proxy_url=None):
                 raise
 
     # Resolve Content-Type based on format ext / mime to prevent content sniffing
-    fmt_ext = (target_format.get('ext') or '').lower()
-    if media_type == 'audio':
-        if fmt_ext == 'm4a':
-            content_type = 'audio/mp4'
-        elif fmt_ext == 'webm':
-            content_type = 'audio/webm'
-        elif fmt_ext == 'ogg':
-            content_type = 'audio/ogg'
-        elif fmt_ext == 'wav':
-            content_type = 'audio/wav'
-        else:
-            content_type = 'audio/mpeg'
-    else:
-        if fmt_ext == 'webm':
-            content_type = 'video/webm'
-        elif fmt_ext == 'mkv':
-            content_type = 'video/x-matroska'
-        elif fmt_ext in ('mov', 'quicktime'):
-            content_type = 'video/quicktime'
-        else:
-            content_type = 'video/mp4'
+    content_type = resolve_content_type(target_format, media_type)
 
     def gen():
         start_time = time.time()
@@ -778,6 +783,10 @@ def stream_download():
     if not target_format:
         return jsonify({"success": False, "error": f"Format '{format_id}' not found."}), 404
 
+    # --- R04: SIDE-EFFECT-FREE DOWNLOAD PROBE ---
+    if request.args.get('probe') in ('1', 'true', 'yes'):
+        return ('', 204)
+
     extractor_name = info.get('extractor', '')
     g.extractor = extractor_name
     extractor_counters[extractor_name] += 1
@@ -932,10 +941,33 @@ def preview_video():
     if format_id == 'auto_extract':
         preview_format = next((f for f in reversed(formats) if f.get('acodec', 'none') != 'none'), None)
     elif format_id == 'best':
-        prog = [f for f in formats if f.get('vcodec', 'none') != 'none' and f.get('acodec', 'none') != 'none' and not is_fragmented(f)]
-        preview_format = prog[0] if prog else (formats[-1] if formats else None)
+        # Prefer progressive preview format (audio + video, not fragmented)
+        prog = [
+            f for f in formats
+            if f.get('vcodec', 'none') != 'none'
+            and f.get('acodec', 'none') != 'none'
+            and not is_fragmented(f)
+        ]
+        if prog:
+            prog_low = [f for f in prog if (f.get('height') or 0) <= 480]
+            preview_format = prog_low[-1] if prog_low else prog[0]
+        else:
+            # Never ffmpeg-merge highest quality for preview; cap preview height at 480
+            video_fmts = [f for f in formats if f.get('vcodec', 'none') != 'none']
+            low_video = [f for f in video_fmts if (f.get('height') or 0) <= 480]
+            if low_video:
+                preview_format = low_video[-1]
+            elif video_fmts:
+                preview_format = min(video_fmts, key=lambda f: f.get('height') or 99999)
+            else:
+                preview_format = formats[-1] if formats else None
     else:
         preview_format = next((f for f in formats if str(f.get('format_id')) == str(format_id)), None)
+        if preview_format and preview_format.get('vcodec', 'none') != 'none' and preview_format.get('acodec', 'none') == 'none':
+            if (preview_format.get('height') or 0) > 480:
+                low_video = [f for f in formats if f.get('vcodec', 'none') != 'none' and (f.get('height') or 0) <= 480]
+                if low_video:
+                    preview_format = low_video[-1]
 
     if not preview_format:
         return jsonify({"success": False, "error": f"Format '{format_id}' not found."}), 404
@@ -943,79 +975,121 @@ def preview_video():
     is_video = preview_format.get('vcodec', 'none') != 'none'
     has_audio = preview_format.get('acodec', 'none') != 'none'
     fragmented = is_fragmented(preview_format)
+    needs_ffmpeg = (is_video and not has_audio) or fragmented or (not is_video and fragmented)
+
     extractor_name = info.get('extractor', 'generic')
     g.extractor = extractor_name
     extractor_counters[extractor_name] += 1
     proxy_url = cached.get("proxy") or proxy_router.get_proxy_for_extractor(extractor_name)
 
-    if is_video and not has_audio:
-        best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
-        if not best_audio:
-            best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
+    active_semaphore = ffmpeg_semaphore if needs_ffmpeg else proxy_semaphore
+    acquired = active_semaphore.acquire(blocking=True, timeout=10)
+    if not acquired:
+        err_text = "Server busy converting media. Please try again in a minute." if needs_ffmpeg else "Server busy streaming downloads. Please try again in a moment."
+        resp = jsonify({
+            "success": False,
+            "error": err_text
+        })
+        resp.headers["Retry-After"] = "30"
+        return resp, 503
 
-        if best_audio:
-            generator, content_type = stream_universal_ffmpeg(preview_format, best_audio, is_audio_only=False, proxy_url=proxy_url)
-            return Response(generator, status=200, headers={
+    permit_released = False
+    def release_permit():
+        nonlocal permit_released
+        if not permit_released:
+            permit_released = True
+            try:
+                active_semaphore.release()
+            except Exception:
+                pass
+
+    try:
+        if needs_ffmpeg:
+            if is_video and not has_audio:
+                best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none' and f.get('vcodec') == 'none'), None)
+                if not best_audio:
+                    best_audio = next((f for f in reversed(formats) if f.get('acodec') != 'none'), None)
+                generator, content_type = stream_universal_ffmpeg(preview_format, best_audio, is_audio_only=False, proxy_url=proxy_url)
+            else:
+                is_audio_only_preview = not is_video
+                generator, content_type = stream_universal_ffmpeg(preview_format, None, is_audio_only=is_audio_only_preview, proxy_url=proxy_url)
+
+            headers = {
                 'Content-Type': content_type,
                 'X-Accel-Buffering': 'no',
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
-            })
+            }
+            wrapped_gen = ReleasingIterator(generator, on_release=release_permit)
+            resp = Response(wrapped_gen, status=200, headers=headers, direct_passthrough=False)
+            resp.call_on_close(release_permit)
+            return resp
 
-    if fragmented:
-        is_audio_only_preview = not is_video
-        generator, content_type = stream_universal_ffmpeg(preview_format, None, is_audio_only=is_audio_only_preview, proxy_url=proxy_url)
-        return Response(generator, status=200, headers={
-            'Content-Type': content_type,
-            'X-Accel-Buffering': 'no',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-        })
+        else:
+            stream_url = preview_format.get('url', '')
+            headers = dict(preview_format.get('http_headers', {}))
+            range_header = request.headers.get('Range')
+            if range_header:
+                headers['Range'] = range_header
 
-    else:
-        stream_url = preview_format.get('url', '')
-        headers = dict(preview_format.get('http_headers', {}))
-        range_header = request.headers.get('Range')
-        if range_header:
-            headers['Range'] = range_header
-
-        proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
-        try:
-            r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30, proxies=proxies)
-            r.raise_for_status()
-        except SSRFValidationError as e:
-            logger.warning("Preview SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
-            return jsonify({"success": False, "error": map_error_message(e)}), 400
-        except requests.HTTPError as e:
-            logger.warning("Upstream preview HTTP error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
-            status = e.response.status_code if e.response is not None else 502
-            return jsonify({"success": False, "error": map_error_message(e)}), status if status in (403, 404) else 502
-        except Exception as e:
-            logger.exception("Preview stream failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
-            return jsonify({"success": False, "error": map_error_message(e)}), 500
-
-        response_headers = {
-            'Content-Type': 'video/mp4' if is_video else 'audio/mpeg',
-            'Accept-Ranges': 'bytes',
-            'X-Accel-Buffering': 'no',
-            'Cache-Control': 'no-cache',
-        }
-        if 'Content-Range' in r.headers:
-            response_headers['Content-Range'] = r.headers['Content-Range']
-        if 'Content-Length' in r.headers:
-            response_headers['Content-Length'] = r.headers['Content-Length']
-
-        def gen():
+            proxies = {'http': proxy_url, 'https': proxy_url} if proxy_url else None
             try:
-                for chunk in r.iter_content(chunk_size=512 * 1024):
-                    if chunk:
-                        if proxy_url:
-                            proxy_router.record_proxied_bytes(len(chunk))
-                        yield chunk
-            finally:
-                r.close()
+                r = safe_requests_get(stream_url, headers=headers, stream=True, timeout=30, proxies=proxies)
+                r.raise_for_status()
+            except SSRFValidationError as e:
+                release_permit()
+                logger.warning("Preview SSRF validation failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+                return jsonify({"success": False, "error": map_error_message(e)}), 400
+            except requests.HTTPError as e:
+                release_permit()
+                logger.warning("Upstream preview HTTP error: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+                status = e.response.status_code if e.response is not None else 502
+                return jsonify({"success": False, "error": map_error_message(e)}), status if status in (403, 404) else 502
+            except Exception as e:
+                release_permit()
+                logger.exception("Preview stream failed: %s", e, extra={"request_id": getattr(g, "request_id", None)})
+                return jsonify({"success": False, "error": map_error_message(e)}), 500
 
-        resp = Response(gen(), status=206 if range_header else 200, headers=response_headers, direct_passthrough=False)
-        resp.call_on_close(r.close)
-        return resp
+            content_type = resolve_content_type(preview_format, media_type)
+            response_headers = {
+                'Content-Type': content_type,
+                'Accept-Ranges': 'bytes',
+                'X-Accel-Buffering': 'no',
+                'Cache-Control': 'no-cache',
+            }
+            if 'Content-Range' in r.headers:
+                response_headers['Content-Range'] = r.headers['Content-Range']
+            if 'Content-Length' in r.headers:
+                response_headers['Content-Length'] = r.headers['Content-Length']
+
+            max_bytes = config.MAX_FILESIZE_MB * 1024 * 1024
+            start_time = time.time()
+            timeout_sec = config.FFMPEG_TIMEOUT_SEC
+            total_bytes = 0
+
+            def gen():
+                nonlocal total_bytes
+                try:
+                    for chunk in r.iter_content(chunk_size=512 * 1024):
+                        if time.time() - start_time > timeout_sec:
+                            break
+                        if chunk:
+                            total_bytes += len(chunk)
+                            if total_bytes > max_bytes:
+                                break
+                            if proxy_url:
+                                proxy_router.record_proxied_bytes(len(chunk))
+                            yield chunk
+                finally:
+                    r.close()
+
+            wrapped_gen = ReleasingIterator(gen(), on_release=release_permit)
+            resp = Response(wrapped_gen, status=206 if range_header else 200, headers=response_headers, direct_passthrough=False)
+            resp.call_on_close(release_permit)
+            resp.call_on_close(r.close)
+            return resp
+    except Exception:
+        release_permit()
+        raise
 
 
 if __name__ == '__main__':
