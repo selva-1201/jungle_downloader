@@ -51,3 +51,13 @@ def test_readme_present_and_complete():
     assert "Growth & SEO Checklist" in readme
     assert "Google Search Console" in readme
 
+
+def test_docs_contain_no_exec_app_curl_and_no_file_protocol():
+    docs_to_check = ["README.md", "DEPLOY.md", "RUNBOOK.md"]
+    for doc in docs_to_check:
+        with open(doc, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        assert "exec app curl" not in content, f"Found 'exec app curl' in {doc}"
+        assert "file:///" not in content, f"Found 'file:///' link in {doc}"
+

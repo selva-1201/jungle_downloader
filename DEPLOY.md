@@ -119,12 +119,12 @@ Oracle Cloud blocks incoming traffic at the Virtual Cloud Network level by defau
    - **Type**: `A` | **Name**: `www` | **IPv4**: `<YOUR_ORACLE_PUBLIC_IP>` | **Proxy status**: `Proxied (Orange Cloud)`
 
 ### 5.2 Video Streaming Policy & MEDIA_HOST Option
-> [!NOTE]
-> **Cloudflare Terms of Service Note:**
-> Cloudflare's self-serve terms restrict serving disproportionate volumes of non-HTML media (video/audio streams) over the free proxied CDN.
+> [!WARNING]
+> **Cloudflare Terms of Service (ToS) Risk**:
+> Cloudflare Section 2.8 of the Self-Serve Subscription Agreement restricts proxying disproportionate volumes of non-HTML media (video/audio streams) through the free/pro proxy CDN without Cloudflare Stream or Enterprise arrangements. Proxying significant video bandwidth through an orange-clouded domain carries an account termination or origin-blocking risk.
 > 
 > **Mode A (Single Domain Default):**
-> Keep `DOMAIN=example.com` orange-clouded. For small clip downloads (TikTok, Reels, Twitter), Cloudflare proxying works well.
+> Keep `DOMAIN=example.com` orange-clouded. Suitable for light usage or short clip downloads.
 > 
 > **Mode B (Dual Domain / MEDIA_HOST for High Volume):**
 > Add a DNS record for `media.example.com` set to **DNS Only (Grey Cloud)**.
@@ -134,6 +134,10 @@ Oracle Cloud blocks incoming traffic at the Virtual Cloud Network level by defau
 > MEDIA_HOST=https://media.example.com
 > ```
 > Uncomment the `media.{$DOMAIN}` block in `Caddyfile`. This routes the HTML app through Cloudflare's DDoS/Turnstile edge while routing raw video streams directly to Caddy via Let's Encrypt TLS.
+> 
+> *Current Implementation Realities*:
+> `MEDIA_HOST` is currently a configuration-level blueprint; client endpoints (`/api/stream`, `/api/preview`) are served relatively from the origin. Dual-domain frontend separation is an architectural extension point.
+> Additionally, Phase 4 monetization features (advertising banners, GDPR/ePrivacy consent CMP templates `_ads.html`, `_consent.html`, and F30 dedicated pages) are reserved extension points and remain pending/disabled at launch.
 
 ### 5.3 SSL/TLS Encryption Mode
 1. In Cloudflare, navigate to **SSL/TLS** &rarr; **Overview**.
@@ -241,8 +245,10 @@ PROXY_MAX_MB=300
 DIRECT_LINK_MODE=large_only
 
 # Resource Limits (Compose)
+# For Ampere A1 (4 OCPU, 24GB RAM):
 APP_MEM_LIMIT=2048M
 APP_CPUS=2.0
+# For AMD Micro Fallback (1 OCPU, 1GB RAM): set APP_MEM_LIMIT=1024M and APP_CPUS=1.0 (with 4GB swap active)
 
 # YouTube Mode
 YT_MODE=best_effort
@@ -275,12 +281,12 @@ docker buildx inspect --bootstrap
 docker compose build app
 ```
 
-### 7.2 Validate Docker Compose Configuration
+### 7.3 Validate Docker Compose Configuration
 ```bash
 docker compose config
 ```
 
-### 7.3 Build and Launch Stack
+### 7.4 Build and Launch Stack
 ```bash
 docker compose build --pull
 docker compose up -d
@@ -328,7 +334,10 @@ Add the following entry (runs weekly on Sunday at 03:00 UTC):
 
 1. **Verify Health Endpoint**:
    ```bash
-   curl -i http://localhost:5000/healthz
+   # From host via Caddy:
+   curl -k https://localhost/healthz
+   # Or directly inside the app container:
+   docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:5000/healthz').read().decode())"
    curl -i https://example.com/healthz
    ```
 2. **Verify Metrics Endpoint Access**:
@@ -338,12 +347,12 @@ Add the following entry (runs weekly on Sunday at 03:00 UTC):
    # Expected: HTTP 403 Forbidden
 
    # Internal check on host via container:
-   docker compose exec app curl -s localhost:5000/metrics
+   docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:5000/metrics').read().decode())"
    ```
 
 3. **Execute Smoke Test**:
    ```bash
-   python3 scripts/smoke_test.py
+   docker compose exec app python scripts/smoke_test.py
    ```
 4. **Browser Test**:
    - Open `https://example.com`

@@ -49,7 +49,7 @@ Operational procedures, incident response workflows, and maintenance runbooks fo
 1. **Inspect Metrics on Localhost**:
    ```bash
    # Access internal metrics endpoint via container
-   docker compose exec app curl -s localhost:5000/metrics | jq .
+   docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:5000/metrics').read().decode())" | jq .
    ```
 
    Check:
@@ -200,7 +200,10 @@ Because Jungle Media Downloader is completely **stateless** (no database, no use
    ```
 5. **Verify Stack**:
    ```bash
-   curl -i http://localhost:5000/healthz
+   # From host via Caddy:
+   curl -k https://localhost/healthz
+   # Or inside container:
+   docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:5000/healthz').read().decode())"
    ```
 
 ---
@@ -213,7 +216,7 @@ Because Jungle Media Downloader is completely **stateless** (no database, no use
   Configure `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the host environment for instant notification if daily automated tests fail.
 - **Internal Metrics Inspection**:
   ```bash
-  docker compose exec app curl -s localhost:5000/metrics
+  docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:5000/metrics').read().decode())"
   ```
 - **Log Inspection**:
 

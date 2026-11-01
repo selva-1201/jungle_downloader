@@ -114,8 +114,8 @@ To maximize organic search performance:
    - Dark theme Tailwind CSS is bundled locally (no external CDN render-blocking).
    - Web fonts use `font-display: swap` and preconnect hints.
 5. **Operational Verification**:
-   - Review operations and incident playbooks in [RUNBOOK.md](file:///home/DevSelva/Apps/MyApps/jungle_downloader/RUNBOOK.md).
-   - Follow production infrastructure deployment in [DEPLOY.md](file:///home/DevSelva/Apps/MyApps/jungle_downloader/DEPLOY.md).
+   - Review operations and incident playbooks in [RUNBOOK.md](RUNBOOK.md).
+   - Follow production infrastructure deployment in [DEPLOY.md](DEPLOY.md).
 
 ---
 
