@@ -49,3 +49,14 @@ def test_ruff_check_clean():
     result = subprocess.run([sys.executable, "-m", "ruff", "check", "."], capture_output=True, text=True)
     assert result.returncode == 0, f"Ruff lint errors found:\n{result.stdout}\n{result.stderr}"
 
+
+def test_ci_workflow_references_dev_requirements():
+    import os
+    ci_path = os.path.join(".github", "workflows", "ci.yml")
+    assert os.path.exists(ci_path), "ci.yml does not exist"
+    with open(ci_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "requirements-dev.txt" in content
+    assert "pip install ruff pytest-cov" not in content
+
